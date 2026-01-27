@@ -55,6 +55,38 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> with SingleTickerPr
     }
   }
 
+  void _showSleepTimerDialog(BuildContext context, EchoPodAudioHandler audioHandler) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('睡眠定时器', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
+            _buildTimerOption(context, audioHandler, '关闭', null),
+            _buildTimerOption(context, audioHandler, '15 分钟', const Duration(minutes: 15)),
+            _buildTimerOption(context, audioHandler, '30 分钟', const Duration(minutes: 30)),
+            _buildTimerOption(context, audioHandler, '60 分钟', const Duration(minutes: 60)),
+            _buildTimerOption(context, audioHandler, '播完当前集', null), // TODO: Implement "End of episode"
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimerOption(BuildContext context, EchoPodAudioHandler handler, String label, Duration? duration) {
+    return ListTile(
+      title: Text(label, textAlign: TextAlign.center),
+      onTap: () {
+        handler.setSleepTimer(duration);
+        Navigator.pop(context);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final audioHandler = ref.watch(audioHandlerProvider);
@@ -183,7 +215,34 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> with SingleTickerPr
                                 icon: const Icon(Icons.playlist_play_rounded, color: Colors.deepPurpleAccent),
                                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PlaylistScreen())),
                               ),
+                              StreamBuilder<Duration?>(
+                                stream: audioHandler.sleepTimerStream,
+                                builder: (context, snapshot) {
+                                  final remaining = snapshot.data;
+                                  return IconButton(
+                                    icon: Icon(
+                                      Icons.timer_outlined,
+                                      color: remaining != null ? Colors.amber : Colors.grey,
+                                    ),
+                                    onPressed: () => _showSleepTimerDialog(context, audioHandler),
+                                  );
+                                },
+                              ),
                             ],
+                          ),
+                          StreamBuilder<Duration?>(
+                            stream: audioHandler.sleepTimerStream,
+                            builder: (context, snapshot) {
+                              final remaining = snapshot.data;
+                              if (remaining == null) return const SizedBox.shrink();
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  '⏰ 还有 ${remaining.inMinutes}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')} 停止播放',
+                                  style: const TextStyle(color: Colors.amber, fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       );

@@ -15,6 +15,8 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   bool _liveActivityActive = false;
   Episode? _currentEpisode;
   Timer? _saveTimer;
+  Timer? _sleepTimer;
+  final _sleepTimerController = StreamController<Duration?>.broadcast();
 
   EchoPodAudioHandler(this._liveActivityService, this._storageService) {
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
@@ -120,6 +122,30 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
   Future<void> setSkipSilence(bool enabled) async {
     // Skipping silence logic would go here
+  }
+
+  Stream<Duration?> get sleepTimerStream => _sleepTimerController.stream;
+
+  void setSleepTimer(Duration? duration) {
+    _sleepTimer?.cancel();
+    if (duration == null) {
+      _sleepTimerController.add(null);
+      return;
+    }
+
+    var remaining = duration;
+    _sleepTimerController.add(remaining);
+    
+    _sleepTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      remaining -= const Duration(seconds: 1);
+      if (remaining.inSeconds <= 0) {
+        pause();
+        _sleepTimer?.cancel();
+        _sleepTimerController.add(null);
+      } else {
+        _sleepTimerController.add(remaining);
+      }
+    });
   }
 
   Future<void> playEpisode(Episode episode, {bool autoPlay = true}) async {
