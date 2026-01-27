@@ -58,3 +58,8 @@ final downloadedEpisodesProvider = FutureProvider<List<Episode>>((ref) async {
   final storage = ref.watch(storageServiceProvider);
   return storage.getDownloadedEpisodes();
 });
+
+final playHistoryProvider = FutureProvider<List<Episode>>((ref) async {
+  final storage = ref.watch(storageServiceProvider);
+  return storage.getPlayHistory();
+});

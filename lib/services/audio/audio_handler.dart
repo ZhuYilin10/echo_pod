@@ -1,17 +1,22 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../core/models/episode.dart';
 import '../platform/live_activity_service.dart';
+import '../storage/storage_service.dart';
 
 class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   final _player = AudioPlayer();
   final _playlist = ConcatenatingAudioSource(children: []);
   final LiveActivityService _liveActivityService;
+  final StorageService _storageService;
   bool _liveActivityActive = false;
+  Episode? _currentEpisode;
+  Timer? _saveTimer;
 
-  EchoPodAudioHandler(this._liveActivityService) {
+  EchoPodAudioHandler(this._liveActivityService, this._storageService) {
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
     _player.setAudioSource(_playlist);
     
@@ -30,14 +35,39 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
     // Listen to playing state changes
     _player.playingStream.listen((playing) {
       _updateLiveActivity(_player.position);
+      if (playing && _currentEpisode != null) {
+        _storageService.addToHistory(_currentEpisode!);
+        _startSaveTimer();
+      } else {
+        _stopSaveTimer();
+        _saveCurrentPosition();
+      }
     });
   }
 
+  void _startSaveTimer() {
+    _saveTimer?.cancel();
+    _saveTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      _saveCurrentPosition();
+    });
+  }
+
+  void _stopSaveTimer() {
+    _saveTimer?.cancel();
+    _saveTimer = null;
+  }
+
+  Future<void> _saveCurrentPosition() async {
+    if (_currentEpisode != null) {
+      await _storageService.savePosition(_currentEpisode!.guid, _player.position);
+    }
+  }
+
   @override
-  Future<void> addQueueItem(MediaItem item) async {
-    final source = await _buildAudioSource(item);
+  Future<void> addQueueItem(MediaItem mediaItem) async {
+    final source = await _buildAudioSource(mediaItem);
     await _playlist.add(source);
-    final newQueue = List<MediaItem>.from(queue.value)..add(item);
+    final newQueue = List<MediaItem>.from(queue.value)..add(mediaItem);
     queue.add(newQueue);
   }
 
@@ -72,7 +102,15 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> pause() => _player.pause();
 
   @override
-  Future<void> stop() => _player.stop();
+  Future<void> stop() async {
+    await _saveCurrentPosition();
+    _stopSaveTimer();
+    await _player.stop();
+    if (_liveActivityActive) {
+      await _liveActivityService.stopLiveActivity();
+      _liveActivityActive = false;
+    }
+  }
 
   @override
   Future<void> seek(Duration position) => _player.seek(position);
@@ -80,10 +118,16 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> setSpeed(double speed) => _player.setSpeed(speed);
 
-
+  Future<void> setSkipSilence(bool enabled) async {
+    // Skipping silence logic would go here
+  }
 
   Future<void> playEpisode(Episode episode, {bool autoPlay = true}) async {
     if (episode.audioUrl == null) return;
+    
+    // Save current position before switching
+    await _saveCurrentPosition();
+    _currentEpisode = episode;
 
     final item = MediaItem(
       id: episode.audioUrl!,
@@ -99,13 +143,19 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
     mediaItem.add(item); // Explicitly update mediaItem
     await _playlist.add(await _buildAudioSource(item));
     
+    // Restore saved position
+    final savedPosition = await _storageService.getPosition(episode.guid);
+    if (savedPosition > Duration.zero) {
+      await _player.seek(savedPosition);
+    }
+    
     if (autoPlay) {
       play();
       
       // Start Live Activity only if playing
       await _liveActivityService.startLiveActivity(
-        podcastTitle: episode.podcastTitle ?? "EchoPod",
-        episodeTitle: episode.title ?? "Episode",
+        podcastTitle: episode.podcastTitle,
+        episodeTitle: episode.title,
         imageUrl: episode.imageUrl ?? "",
         progress: 0.0,
         isPlaying: true,

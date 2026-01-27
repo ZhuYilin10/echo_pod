@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'services/storage/storage_service.dart';
 import 'services/audio/audio_handler.dart';
 import 'services/platform/live_activity_service.dart';
 import 'core/providers/providers.dart';
@@ -16,9 +17,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   final liveActivityService = LiveActivityService();
+  final storageService = StorageService();
   
   _audioHandler = await AudioService.init(
-    builder: () => EchoPodAudioHandler(liveActivityService),
+    builder: () => EchoPodAudioHandler(liveActivityService, storageService),
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.echopod.audio',
       androidNotificationChannelName: 'EchoPod Playback',

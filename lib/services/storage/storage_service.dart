@@ -6,6 +6,8 @@ import '../../core/models/podcast.dart';
 class StorageService {
   static const String _subKey = 'subscriptions';
   static const String _downloadKey = 'downloaded_episodes';
+  static const String _historyKey = 'play_history';
+  static const String _positionKey = 'playback_positions';
 
   Future<void> subscribe(Podcast podcast) async {
     final prefs = await SharedPreferences.getInstance();
@@ -66,6 +68,61 @@ class StorageService {
     } catch (e) {
       return [];
     }
+  }
+
+  Future<void> addToHistory(Episode episode) async {
+    final prefs = await SharedPreferences.getInstance();
+    final history = await getPlayHistory();
+    // Remove if already exists to move to top
+    history.removeWhere((e) => e.guid == episode.guid);
+    history.insert(0, episode);
+    // Keep last 100 items
+    if (history.length > 100) history.removeLast();
+    await prefs.setString(_historyKey, jsonEncode(history.map((e) => e.toJson()).toList()));
+  }
+
+  Future<List<Episode>> getPlayHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_historyKey);
+    if (raw == null) return [];
+    try {
+      final List list = jsonDecode(raw);
+      return list.map((e) => Episode.fromJson(e)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> savePosition(String guid, Duration position) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_positionKey);
+    Map<String, int> positions = {};
+    if (raw != null) {
+      try {
+        positions = Map<String, int>.from(jsonDecode(raw));
+      } catch (_) {}
+    }
+    positions[guid] = position.inMilliseconds;
+    // Limit storage to 200 episodes
+    if (positions.length > 200) {
+      final keysToRemove = positions.keys.take(positions.length - 200);
+      for (var k in keysToRemove) {
+        positions.remove(k);
+      }
+    }
+    await prefs.setString(_positionKey, jsonEncode(positions));
+  }
+
+  Future<Duration> getPosition(String guid) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_positionKey);
+    if (raw == null) return Duration.zero;
+    try {
+      final Map<String, dynamic> positions = jsonDecode(raw);
+      final ms = positions[guid];
+      if (ms != null) return Duration(milliseconds: ms);
+    } catch (_) {}
+    return Duration.zero;
   }
 
   Future<String> exportToOpml() async {
