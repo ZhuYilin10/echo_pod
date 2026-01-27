@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:diffutil_dart/diffutil.dart' as diffutil;
 import '../../core/models/podcast.dart';
 import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
@@ -21,6 +20,7 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
   final List<Episode> _displayedEpisodes = [];
   bool _isLoading = true;
   bool _isPaginating = false;
+  bool _isAscending = false;
   static const int _pageSize = 20;
   
   final ScrollController _scrollController = ScrollController();
@@ -37,6 +37,14 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _toggleSort() {
+    setState(() {
+      _isAscending = !_isAscending;
+      _allEpisodes = _allEpisodes.reversed.toList();
+      _refreshUI();
+    });
   }
 
   void _onScroll() {
@@ -174,8 +182,8 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                               } else {
                                 await storage.subscribe(widget.podcast);
                               }
-                              ref.refresh(subscriptionsProvider);
-                              ref.refresh(isSubscribedProvider(widget.podcast.feedUrl));
+                              ref.invalidate(subscriptionsProvider);
+                              ref.invalidate(isSubscribedProvider(widget.podcast.feedUrl));
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isSubscribed ? Colors.grey[800] : Colors.deepPurple,
@@ -189,7 +197,17 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                       ],
                     ),
                     const Divider(height: 32),
-                    const Text('剧集列表', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('剧集列表', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        IconButton(
+                          icon: Icon(_isAscending ? Icons.sort_by_alpha_rounded : Icons.sort_rounded),
+                          tooltip: _isAscending ? '正序' : '倒序',
+                          onPressed: _toggleSort,
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
