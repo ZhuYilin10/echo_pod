@@ -1,5 +1,3 @@
-import '../core/models/episode.dart';
-
 class SemanticSearchService {
   // In a production app, this would query a Vector Database (like Chroma or Pinecone)
   // that contains the indexed transcripts of the podcasts.

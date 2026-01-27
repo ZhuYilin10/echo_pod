@@ -36,6 +36,34 @@ class AIContentService {
     }
   }
 
+  // Extract a golden sentence
+  Future<String> extractGoldenSentence(String title, String description) async {
+    if (apiKey.isEmpty) {
+      return "世界上只有一种英雄主义，就是看清生活的真相后依然热爱它。";
+    }
+
+    try {
+      final response = await _client.createChatCompletion(
+        request: CreateChatCompletionRequest(
+          model: ChatCompletionModel.modelId('gpt-4o'),
+          messages: [
+            ChatCompletionMessage.system(
+              content: '你是一个专业的金句提炼专家。请从提供的播客内容中，提炼出一句最扎心、最具启发性或最感人的话（50字以内）。如果内容不够丰富，请根据主旨进行艺术加工。',
+            ),
+            ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.parts([
+                ChatCompletionMessageContentPart.text(text: '标题: $title\n内容: $description'),
+              ]),
+            ),
+          ],
+        ),
+      );
+      return response.choices.first.message.content?.replaceAll('"', '').replaceAll('“', '').replaceAll('”', '') ?? "智慧往往藏在那些被我们忽略的对话里。";
+    } catch (e) {
+      return "金句提取失败，但美好的思想永存。";
+    }
+  }
+
   // Answer questions about the episode (Mocked with context for now)
   Future<String> askEpisodeQuestion(String question, String context) async {
     if (apiKey.isEmpty) {

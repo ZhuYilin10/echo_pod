@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
 import 'quote_card.dart';
@@ -16,15 +20,22 @@ class ShareScreen extends ConsumerStatefulWidget {
 class _ShareScreenState extends ConsumerState<ShareScreen> {
   String? _quote;
   bool _isLoading = false;
+  final ScreenshotController _screenshotController = ScreenshotController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-generate on entry
+    _generateQuote();
+  }
 
   void _generateQuote() async {
     setState(() => _isLoading = true);
     
     final aiService = ref.read(aiServiceProvider);
-    // Ask AI to find a "Golden Sentence" from the description/title
-    final result = await aiService.getEpisodeSummary(
-      '提取金句: ${widget.episode.title}',
-      '请从以下播客描述中提取一句最感人或最具启发性的话作为金句，如果找不到，请根据内容润色出一句。描述: ${widget.episode.description}',
+    final result = await aiService.extractGoldenSentence(
+      widget.episode.title,
+      widget.episode.description ?? '',
     );
 
     if (mounted) {
@@ -35,61 +46,105 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
     }
   }
 
+  void _shareImage() async {
+    final image = await _screenshotController.capture();
+    if (image == null) return;
+
+    final directory = await getTemporaryDirectory();
+    final imagePath = await File('${directory.path}/share_quote.png').create();
+    await imagePath.writeAsBytes(image);
+
+    await Share.shareXFiles([XFile(imagePath.path)], text: '来自 EchoPod AI 的金句分享');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('生成金句卡片'),
         centerTitle: true,
+        actions: [
+          if (_quote != null && !_isLoading)
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _generateQuote,
+              tooltip: '换一句',
+            ),
+        ],
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            children: [
-              if (_isLoading)
-                const CircularProgressIndicator()
-              else if (_quote != null)
-                QuoteCard(
-                  episode: widget.episode,
-                  quote: _quote!,
-                  author: 'EchoPod AI 精选',
-                )
-              else
-                Column(
-                  children: [
-                    const Icon(Icons.auto_awesome, size: 80, color: Colors.amber),
-                    const SizedBox(height: 24),
-                    const Text('让 AI 为这一集提炼金句', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    const Text('生成精美的图片分享到朋友圈', style: TextStyle(color: Colors.grey)),
-                  ],
-                ),
-              const SizedBox(height: 48),
-              if (!_isLoading)
-                ElevatedButton.icon(
-                  onPressed: _generateQuote,
-                  icon: const Icon(Icons.auto_awesome),
-                  label: Text(_quote == null ? '立即生成' : '换一句'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                  ),
-                ),
-              if (_quote != null) ...[
-                const SizedBox(height: 16),
-                TextButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('图片已保存到相册 (模拟)')),
-                    );
-                  },
-                  icon: const Icon(Icons.download_rounded),
-                  label: const Text('保存图片'),
-                ),
-              ],
+      body: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Theme.of(context).colorScheme.surface,
+              Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
             ],
           ),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 40),
+            Expanded(
+              child: Center(
+                child: _isLoading
+                    ? const Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 20),
+                          Text('AI 正在为您打磨金句...', style: TextStyle(color: Colors.grey)),
+                        ],
+                      )
+                    : _quote != null
+                        ? Screenshot(
+                            controller: _screenshotController,
+                            child: QuoteCard(
+                              episode: widget.episode,
+                              quote: _quote!,
+                              author: '本集核心观点',
+                            ),
+                          )
+                        : const Text('生成失败，请重试'),
+              ),
+            ),
+            const SizedBox(height: 40),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                      label: const Text('取消'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: (_quote != null && !_isLoading) ? _shareImage : null,
+                      icon: const Icon(Icons.share_rounded),
+                      label: const Text('分享朋友圈'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurpleAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SafeArea(child: SizedBox(height: 20)),
+          ],
         ),
       ),
     );
