@@ -70,3 +70,27 @@ final playHistoryProvider = FutureProvider<List<Episode>>((ref) async {
   final storage = ref.watch(storageServiceProvider);
   return storage.getPlayHistory();
 });
+
+final recentSubscribedEpisodesProvider = FutureProvider<List<Episode>>((ref) async {
+  final storage = ref.watch(storageServiceProvider);
+  final podcastService = ref.watch(podcastServiceProvider);
+  final subs = await storage.getSubscriptions();
+  
+  // Fetch episodes in parallel for better performance
+  final results = await Future.wait(
+    subs.map((podcast) => podcastService.fetchEpisodes(podcast.feedUrl).then(
+      (episodes) => episodes.take(3).toList(),
+      onError: (_) => <Episode>[], // Ignore failed fetches for individual podcasts
+    )),
+  );
+  
+  final List<Episode> allEpisodes = results.expand((e) => e).toList();
+  
+  // Sort by date descending
+  allEpisodes.sort((a, b) {
+    if (a.pubDate == null || b.pubDate == null) return 0;
+    return b.pubDate!.compareTo(a.pubDate!);
+  });
+  
+  return allEpisodes.take(30).toList();
+});

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/providers/providers.dart';
-import '../search/search_screen.dart';
-import '../podcast_detail/podcast_detail_screen.dart';
-import 'downloads_screen.dart';
-
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import '../../core/providers/providers.dart';
+import '../../core/models/episode.dart';
+import '../../core/models/podcast.dart';
+import '../podcast_detail/podcast_detail_screen.dart';
+import '../player/player_screen.dart';
+import '../search/search_screen.dart';
+import 'downloads_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -43,7 +45,6 @@ class HomeScreen extends ConsumerWidget {
             onPressed: () async {
               final url = controller.text.trim();
               if (url.isEmpty) return;
-
               Navigator.pop(context);
               _handleManualSubscription(context, ref, url);
             },
@@ -56,15 +57,14 @@ class HomeScreen extends ConsumerWidget {
 
   void _handleManualSubscription(BuildContext context, WidgetRef ref, String url) async {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('正在解析 RSS 地址...')));
-    
     final podcastService = ref.read(podcastServiceProvider);
     final storageService = ref.read(storageServiceProvider);
-    
     final podcast = await podcastService.fetchPodcastMetadata(url);
     
     if (podcast != null) {
       await storageService.subscribe(podcast);
       ref.invalidate(subscriptionsProvider);
+      ref.invalidate(recentSubscribedEpisodesProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('订阅成功: ${podcast.title}')));
       }
@@ -78,137 +78,146 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subsAsync = ref.watch(subscriptionsProvider);
+    final recentAsync = ref.watch(recentSubscribedEpisodesProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('我的订阅'),
-        centerTitle: true,
+        title: const Text('EchoPod'),
+        centerTitle: false,
         leading: IconButton(
           icon: const Icon(Icons.download_for_offline_rounded),
-          tooltip: '查看下载',
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const DownloadsScreen()),
-          ),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const DownloadsScreen())),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_link_rounded),
-            tooltip: '手动添加 RSS',
-            onPressed: () => _showAddRssDialog(context, ref),
+            icon: const Icon(Icons.search_rounded),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SearchScreen())),
           ),
-          IconButton(
-            icon: const Icon(Icons.output_rounded),
-            tooltip: '导出 OPML',
-            onPressed: () => _exportOpml(context, ref),
-          ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SearchScreen()),
-            ),
-          ),
+          IconButton(icon: const Icon(Icons.add_link_rounded), onPressed: () => _showAddRssDialog(context, ref)),
+          IconButton(icon: const Icon(Icons.output_rounded), onPressed: () => _exportOpml(context, ref)),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(subscriptionsProvider);
-          // Wait for the future to complete
-          await ref.read(subscriptionsProvider.future);
+          ref.invalidate(recentSubscribedEpisodesProvider);
         },
-        child: subsAsync.when(
-          data: (subs) => subs.isEmpty
-              ? SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.7,
-                    child: _buildEmptyState(context),
+        child: CustomScrollView(
+          slivers: [
+            // Subscribed Podcasts Horizontal List (Small area)
+            SliverToBoxAdapter(
+              child: _buildSubscribedChannels(context, subsAsync),
+            ),
+            
+            const SliverPadding(
+              padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
+              sliver: SliverToBoxAdapter(
+                child: Text('最新单集', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+            ),
+
+            // Recent Episodes Vertical List (Main area)
+            recentAsync.when(
+              data: (episodes) => episodes.isEmpty 
+                ? _buildEmptyStateSliver(context)
+                : SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _buildEpisodeItem(context, ref, episodes[index]),
+                      childCount: episodes.length,
+                    ),
                   ),
-                )
-              : GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.8,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  itemCount: subs.length,
-                  itemBuilder: (context, index) => _buildPodcastCard(context, subs[index]),
-                ),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, s) => Center(child: Text('Error: $e')),
+              loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
+              error: (e, s) => SliverFillRemaining(child: Center(child: Text('加载失败: $e'))),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildPodcastCard(BuildContext context, podcast) {
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => PodcastDetailScreen(podcast: podcast)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                podcast.imageUrl ?? '',
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: Colors.grey[800],
-                  child: const Icon(Icons.podcasts, size: 50),
-                ),
-              ),
+  Widget _buildSubscribedChannels(BuildContext context, AsyncValue<List<Podcast>> subsAsync) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text('我的订阅', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+        ),
+        SizedBox(
+          height: 100,
+          child: subsAsync.when(
+            data: (subs) => ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              scrollDirection: Axis.horizontal,
+              itemCount: subs.length,
+              itemBuilder: (context, index) {
+                final podcast = subs[index];
+                return GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => PodcastDetailScreen(podcast: podcast))),
+                  child: Container(
+                    width: 70,
+                    margin: const EdgeInsets.only(right: 12),
+                    child: Column(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(podcast.imageUrl ?? '', width: 60, height: 60, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.podcasts)),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(podcast.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10)),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) => const SizedBox(),
           ),
-          const SizedBox(height: 8),
-          Text(
-            podcast.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          Text(
-            podcast.artist ?? '',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.podcasts_rounded, size: 100, color: Colors.deepPurple.withOpacity(0.3)),
-          const SizedBox(height: 24),
-          const Text('发现你喜欢的声音', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const Text('订阅播客后，它们将出现在这里', style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SearchScreen()),
-            ),
-            icon: const Icon(Icons.search),
-            label: const Text('开始探索'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            ),
+  Widget _buildEpisodeItem(BuildContext context, WidgetRef ref, Episode episode) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          episode.imageUrl ?? '',
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            width: 48,
+            height: 48,
+            color: Colors.grey[800],
+            child: const Icon(Icons.music_note_rounded, size: 24, color: Colors.white24),
           ),
-        ],
+        ),
+      ),
+      title: Text(episode.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      subtitle: Text('${episode.podcastTitle} · ${episode.pubDate?.month}月${episode.pubDate?.day}日', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      onTap: () {
+        ref.read(audioHandlerProvider).playEpisode(episode, autoPlay: false);
+        Navigator.push(context, MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)));
+      },
+    );
+  }
+
+  Widget _buildEmptyStateSliver(BuildContext context) {
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.podcasts_rounded, size: 64, color: Colors.white24),
+            const SizedBox(height: 16),
+            const Text('暂无更新', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
       ),
     );
   }
