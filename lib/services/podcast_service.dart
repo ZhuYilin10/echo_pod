@@ -66,4 +66,22 @@ class PodcastService {
       return [];
     }
   }
+
+  Future<Podcast?> fetchPodcastMetadata(String feedUrl) async {
+    try {
+      final response = await _dio.get(feedUrl);
+      final feed = RssFeed.parse(response.data);
+      
+      return Podcast(
+        title: feed.title ?? '未知播客',
+        artist: feed.itunes?.author ?? feed.author ?? '未知主播',
+        feedUrl: feedUrl,
+        imageUrl: feed.itunes?.image?.href ?? feed.image?.url,
+        description: feed.description,
+      );
+    } catch (e) {
+      print('Error parsing RSS metadata: $e');
+      return null;
+    }
+  }
 }

@@ -3,12 +3,14 @@ class Podcast {
   final String title;
   final String? artist;
   final String? imageUrl;
+  final String? description;
 
   Podcast({
     required this.feedUrl,
     required this.title,
     this.artist,
     this.imageUrl,
+    this.description,
   });
 
   Map<String, dynamic> toJson() => {
@@ -16,6 +18,7 @@ class Podcast {
     'title': title,
     'artist': artist,
     'imageUrl': imageUrl,
+    'description': description,
   };
 
   factory Podcast.fromJson(Map<String, dynamic> json) => Podcast(
@@ -23,5 +26,6 @@ class Podcast {
     title: json['title'],
     artist: json['artist'],
     imageUrl: json['imageUrl'],
+    description: json['description'],
   );
 }

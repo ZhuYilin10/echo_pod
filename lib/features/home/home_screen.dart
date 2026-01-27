@@ -23,6 +23,58 @@ class HomeScreen extends ConsumerWidget {
     await Share.shareXFiles([XFile(file.path)], text: '我的 EchoPod 订阅列表 (OPML)');
   }
 
+  void _showAddRssDialog(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('手动订阅 RSS'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: '请输入 RSS 订阅地址 (XML/RSS URL)',
+            helperText: '例如: https://example.com/feed.xml',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          ElevatedButton(
+            onPressed: () async {
+              final url = controller.text.trim();
+              if (url.isEmpty) return;
+
+              Navigator.pop(context);
+              _handleManualSubscription(context, ref, url);
+            },
+            child: const Text('添加'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleManualSubscription(BuildContext context, WidgetRef ref, String url) async {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('正在解析 RSS 地址...')));
+    
+    final podcastService = ref.read(podcastServiceProvider);
+    final storageService = ref.read(storageServiceProvider);
+    
+    final podcast = await podcastService.fetchPodcastMetadata(url);
+    
+    if (podcast != null) {
+      await storageService.subscribe(podcast);
+      ref.invalidate(subscriptionsProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('订阅成功: ${podcast.title}')));
+      }
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('无法解析该地址，请检查格式是否正确')));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subsAsync = ref.watch(subscriptionsProvider);
@@ -40,6 +92,11 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add_link_rounded),
+            tooltip: '手动添加 RSS',
+            onPressed: () => _showAddRssDialog(context, ref),
+          ),
           IconButton(
             icon: const Icon(Icons.output_rounded),
             tooltip: '导出 OPML',
