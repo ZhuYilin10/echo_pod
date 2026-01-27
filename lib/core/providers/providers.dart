@@ -53,3 +53,8 @@ final isSubscribedProvider = FutureProvider.family<bool, String>((ref, feedUrl) 
   final storage = ref.watch(storageServiceProvider);
   return storage.isSubscribed(feedUrl);
 });
+
+final downloadedEpisodesProvider = FutureProvider<List<Episode>>((ref) async {
+  final storage = ref.watch(storageServiceProvider);
+  return storage.getDownloadedEpisodes();
+});

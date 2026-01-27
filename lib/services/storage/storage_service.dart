@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/models/episode.dart';
 import '../../core/models/podcast.dart';
 
 class StorageService {
   static const String _subKey = 'subscriptions';
+  static const String _downloadKey = 'downloaded_episodes';
 
   Future<void> subscribe(Podcast podcast) async {
     final prefs = await SharedPreferences.getInstance();
@@ -33,6 +35,34 @@ class StorageService {
     try {
       final List list = jsonDecode(raw);
       return list.map((e) => Podcast.fromJson(e)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<void> saveDownload(Episode episode) async {
+    final prefs = await SharedPreferences.getInstance();
+    final downloads = await getDownloadedEpisodes();
+    if (!downloads.any((e) => e.guid == episode.guid)) {
+      downloads.add(episode);
+      await prefs.setString(_downloadKey, jsonEncode(downloads.map((e) => e.toJson()).toList()));
+    }
+  }
+
+  Future<void> removeDownload(String guid) async {
+    final prefs = await SharedPreferences.getInstance();
+    final downloads = await getDownloadedEpisodes();
+    downloads.removeWhere((e) => e.guid == guid);
+    await prefs.setString(_downloadKey, jsonEncode(downloads.map((e) => e.toJson()).toList()));
+  }
+
+  Future<List<Episode>> getDownloadedEpisodes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_downloadKey);
+    if (raw == null) return [];
+    try {
+      final List list = jsonDecode(raw);
+      return list.map((e) => Episode.fromJson(e)).toList();
     } catch (e) {
       return [];
     }

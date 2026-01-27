@@ -108,11 +108,17 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
     setState(() => _downloadProgress[episode.guid] = 0.01);
     
     final downloadService = ref.read(downloadServiceProvider);
+    final storageService = ref.read(storageServiceProvider);
     try {
       await downloadService.downloadEpisode(episode.audioUrl!, (progress) {
         if (mounted) setState(() => _downloadProgress[episode.guid] = progress);
       });
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已下载: ${episode.title}')));
+      // Save to registry
+      await storageService.saveDownload(episode);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已下载: ${episode.title}')));
+        ref.invalidate(downloadedEpisodesProvider);
+      }
     } catch (e) {
       if (mounted) {
         setState(() => _downloadProgress.remove(episode.guid));

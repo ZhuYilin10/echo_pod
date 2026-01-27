@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
 import '../search/search_screen.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
-import '../player/mini_player.dart';
+import 'downloads_screen.dart';
 
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
@@ -31,6 +31,14 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('我的订阅'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.download_for_offline_rounded),
+          tooltip: '查看下载',
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const DownloadsScreen()),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.output_rounded),

@@ -48,4 +48,12 @@ class DownloadService {
     }
     return null;
   }
+
+  Future<void> deleteDownload(String audioUrl) async {
+    final path = await _getLocalPath(audioUrl);
+    final file = File(path);
+    if (file.existsSync()) {
+      await file.delete();
+    }
+  }
 }
