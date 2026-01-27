@@ -1,10 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:audio_service/audio_service.dart';
 import '../../services/podcast_service.dart';
 import '../../services/storage/storage_service.dart';
-import '../../services/ai/ai_service.dart';
 import '../../services/audio/audio_handler.dart';
 import '../models/podcast.dart';
+import '../models/episode.dart';
 
 import '../../services/ai/ai_content_service.dart';
 import '../../services/discovery_service.dart';
@@ -47,6 +46,14 @@ final subscriptionsProvider = FutureProvider<List<Podcast>>((ref) async {
 final recommendationsProvider = FutureProvider<List<Podcast>>((ref) async {
   final discovery = ref.watch(discoveryServiceProvider);
   return discovery.fetchDailyRecommendations();
+});
+
+final genrePodcastsProvider = FutureProvider.family<List<Podcast>, String>((ref, genreId) async {
+  final discovery = ref.watch(discoveryServiceProvider);
+  if (genreId == 'all') {
+    return discovery.fetchDailyRecommendations();
+  }
+  return discovery.fetchByGenre(genreId);
 });
 
 final isSubscribedProvider = FutureProvider.family<bool, String>((ref, feedUrl) async {

@@ -31,11 +31,41 @@ class DiscoveryService {
             artist: json['authorsText'] ?? '未知主播',
             imageUrl: json['logoURL'],
             feedUrl: feedUrl,
+            description: json['description'],
           );
         }).whereType<Podcast>().toList();
       }
-    } catch (e) {
-      print('Error fetching recommendations: $e');
+    } catch (_) {
+      // Error handled silently
+    }
+    return [];
+  }
+
+  Future<List<Podcast>> fetchByGenre(String genreId) async {
+    try {
+      final response = await _dio.get(
+        'https://itunes.apple.com/search',
+        queryParameters: {
+          'term': 'podcast',
+          'media': 'podcast',
+          'genreId': genreId,
+          'country': 'CN',
+          'limit': 50,
+        },
+      );
+      
+      final results = response.data['results'] as List;
+      return results.map((item) {
+        return Podcast(
+          title: item['collectionName'] ?? 'Unknown',
+          artist: item['artistName'],
+          feedUrl: item['feedUrl'],
+          imageUrl: item['artworkUrl600'] ?? item['artworkUrl100'],
+          description: '',
+        );
+      }).toList();
+    } catch (_) {
+      // Error handled silently
     }
     return [];
   }
