@@ -264,7 +264,7 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
               onPressed: () => _download(episode),
             ),
       onTap: () {
-        ref.read(audioHandlerProvider).playEpisode(episode);
+        ref.read(audioHandlerProvider).playEpisode(episode, autoPlay: false);
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)),

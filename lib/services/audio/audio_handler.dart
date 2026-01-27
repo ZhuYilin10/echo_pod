@@ -82,7 +82,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
 
 
-  Future<void> playEpisode(Episode episode) async {
+  Future<void> playEpisode(Episode episode, {bool autoPlay = true}) async {
     if (episode.audioUrl == null) return;
 
     final item = MediaItem(
@@ -99,17 +99,19 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
     mediaItem.add(item); // Explicitly update mediaItem
     await _playlist.add(await _buildAudioSource(item));
     
-    play();
-    
-    // Start Live Activity
-    await _liveActivityService.startLiveActivity(
-      podcastTitle: episode.podcastTitle ?? "EchoPod",
-      episodeTitle: episode.title ?? "Episode",
-      imageUrl: episode.imageUrl ?? "",
-      progress: 0.0,
-      isPlaying: true,
-    );
-    _liveActivityActive = true;
+    if (autoPlay) {
+      play();
+      
+      // Start Live Activity only if playing
+      await _liveActivityService.startLiveActivity(
+        podcastTitle: episode.podcastTitle ?? "EchoPod",
+        episodeTitle: episode.title ?? "Episode",
+        imageUrl: episode.imageUrl ?? "",
+        progress: 0.0,
+        isPlaying: true,
+      );
+      _liveActivityActive = true;
+    }
   }
 
   Future<void> _updateLiveActivity(Duration position) async {

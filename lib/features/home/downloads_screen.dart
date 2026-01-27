@@ -65,7 +65,7 @@ class DownloadsScreen extends ConsumerWidget {
                   },
                 ),
                 onTap: () {
-                  ref.read(audioHandlerProvider).playEpisode(episode);
+                  ref.read(audioHandlerProvider).playEpisode(episode, autoPlay: false);
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)),
