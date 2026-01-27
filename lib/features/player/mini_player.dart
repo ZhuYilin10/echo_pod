@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_service/audio_service.dart';
 import '../../core/providers/providers.dart';
 import 'player_screen.dart';
+import 'playlist_screen.dart';
 import '../../core/models/episode.dart';
 
 class MiniPlayer extends ConsumerWidget {
@@ -23,7 +24,7 @@ class MiniPlayer extends ConsumerWidget {
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceVariant,
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -118,8 +119,11 @@ class MiniPlayer extends ConsumerWidget {
                         },
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: audioHandler.stop,
+                        icon: const Icon(Icons.playlist_play_rounded),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const PlaylistScreen()),
+                        ),
                       ),
                     ],
                   ),
