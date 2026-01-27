@@ -21,6 +21,7 @@ class MiniPlayer extends ConsumerWidget {
         return Container(
           height: 70,
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceVariant,
             borderRadius: BorderRadius.circular(12),
@@ -32,74 +33,99 @@ class MiniPlayer extends ConsumerWidget {
               ),
             ],
           ),
-          child: InkWell(
-            onTap: () {
-              // We need to reconstruct the Episode model for the player screen
-              // or just pass mediaItem details.
-              final episode = Episode(
-                guid: mediaItem.id,
-                title: mediaItem.title,
-                podcastTitle: mediaItem.album ?? '',
-                imageUrl: mediaItem.artUri?.toString(),
-                audioUrl: mediaItem.id,
-              );
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)),
-              );
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      mediaItem.artUri?.toString() ?? '',
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.podcasts),
+          child: Stack(
+            children: [
+              // Background Progress Bar
+              StreamBuilder<PlaybackState>(
+                stream: audioHandler.playbackState,
+                builder: (context, snapshot) {
+                  final state = snapshot.data;
+                  final position = state?.updatePosition ?? Duration.zero;
+                  final duration = mediaItem.duration ?? Duration.zero;
+                  final progress = duration.inMilliseconds > 0
+                      ? position.inMilliseconds / duration.inMilliseconds
+                      : 0.0;
+
+                  return Positioned.fill(
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: progress.clamp(0.0, 1.0),
+                      child: Container(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          mediaItem.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          mediaItem.album ?? '',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  StreamBuilder<PlaybackState>(
-                    stream: audioHandler.playbackState,
-                    builder: (context, snapshot) {
-                      final playing = snapshot.data?.playing ?? false;
-                      return IconButton(
-                        icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-                        onPressed: playing ? audioHandler.pause : audioHandler.play,
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: audioHandler.stop,
-                  ),
-                ],
+                  );
+                },
               ),
-            ),
+              // Main Content
+              InkWell(
+                onTap: () {
+                  final episode = Episode(
+                    guid: mediaItem.id,
+                    title: mediaItem.title,
+                    podcastTitle: mediaItem.album ?? '',
+                    imageUrl: mediaItem.artUri?.toString(),
+                    audioUrl: mediaItem.id,
+                  );
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          mediaItem.artUri?.toString() ?? '',
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.podcasts),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              mediaItem.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              mediaItem.album ?? '',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      StreamBuilder<PlaybackState>(
+                        stream: audioHandler.playbackState,
+                        builder: (context, snapshot) {
+                          final playing = snapshot.data?.playing ?? false;
+                          return IconButton(
+                            icon: Icon(playing ? Icons.pause : Icons.play_arrow),
+                            onPressed: playing ? audioHandler.pause : audioHandler.play,
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: audioHandler.stop,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
