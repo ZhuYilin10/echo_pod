@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/podcast.dart';
 import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
-import '../player/player_screen.dart';
+import '../episode_detail/episode_detail_screen.dart';
 
 class PodcastDetailScreen extends ConsumerStatefulWidget {
   final Podcast podcast;
@@ -13,8 +13,6 @@ class PodcastDetailScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<PodcastDetailScreen> createState() => _PodcastDetailScreenState();
 }
-
-import '../episode_detail/episode_detail_screen.dart';
 
 class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
   final GlobalKey<SliverAnimatedListState> _listKey = GlobalKey<SliverAnimatedListState>();
