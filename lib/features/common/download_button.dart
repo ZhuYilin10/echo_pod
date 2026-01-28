@@ -92,9 +92,12 @@ class _DownloadButtonState extends ConsumerState<DownloadButton> {
     setState(() => _isActionInProgress = true);
     try {
       final downloadService = ref.read(downloadServiceProvider);
-      // We don't need the callback here because we listen to the stream provider
-      // But we pass an empty one to satisfy the signature if needed, or update signature
+      final storageService = ref.read(storageServiceProvider);
+
       await downloadService.downloadEpisode(widget.episode.audioUrl!, (p) {});
+
+      // Save complete metadata after successful download
+      await storageService.saveDownload(widget.episode);
 
       ref.invalidate(downloadedEpisodesProvider);
       if (mounted) {
@@ -132,7 +135,11 @@ class _DownloadButtonState extends ConsumerState<DownloadButton> {
 
     if (confirm == true && widget.episode.audioUrl != null) {
       final downloadService = ref.read(downloadServiceProvider);
+      final storageService = ref.read(storageServiceProvider);
+
       await downloadService.deleteDownload(widget.episode.audioUrl!);
+      await storageService.removeDownload(widget.episode.guid);
+
       ref.invalidate(downloadedEpisodesProvider);
       if (mounted) {
         ScaffoldMessenger.of(context)

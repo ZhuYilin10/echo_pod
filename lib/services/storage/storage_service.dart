@@ -66,6 +66,8 @@ class StorageService {
     if (raw == null) return [];
     try {
       final List list = jsonDecode(raw);
+      // Optional: Filter to only return episodes where the file actually exists
+      // But for UI speed, we'll return all and let UI handle broken links or cleanup
       return list.map((e) => Episode.fromJson(e)).toList();
     } catch (e) {
       return [];
