@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home/home_screen.dart';
 import 'discovery/discovery_screen.dart';
-import 'search/search_screen.dart';
 import 'player/mini_player.dart';
 
 class MainNavigationWrapper extends StatefulWidget {
@@ -17,7 +16,6 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const DiscoveryScreen(),
-    const SearchScreen(),
   ];
 
   @override
@@ -36,7 +34,6 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: '我的'),
           BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), label: '发现'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: '搜索'),
         ],
       ),
     );

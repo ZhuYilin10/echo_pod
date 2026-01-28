@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
+import '../search/search_screen.dart';
 
 class DiscoveryScreen extends ConsumerStatefulWidget {
   const DiscoveryScreen({super.key});
@@ -32,6 +33,12 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
       appBar: AppBar(
         title: const Text('发现宝藏'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search_rounded),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SearchScreen())),
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
