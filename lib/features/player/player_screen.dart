@@ -21,8 +21,6 @@ class PlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _PlayerScreenState extends ConsumerState<PlayerScreen> {
-  bool _isSkipSilenceEnabled = false;
-
   void _navigateToPodcastDetail() async {
     final podcastService = ref.read(podcastServiceProvider);
     final subs = await ref.read(subscriptionsProvider.future);
@@ -251,25 +249,52 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     },
                   ),
                   // Skip Silence
-                  IconButton(
-                    icon: Icon(
-                      Icons.volume_off_outlined,
-                      color: _isSkipSilenceEnabled
-                          ? Colors.tealAccent
-                          : Colors.white70,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isSkipSilenceEnabled = !_isSkipSilenceEnabled;
-                      });
-                      audioHandler.setSkipSilence(_isSkipSilenceEnabled);
-                    },
+                  StreamBuilder<bool>(
+                    stream: audioHandler.skipSilenceStream,
+                    builder: (context, snapshot) {
+                      final isEnabled = snapshot.data ?? false;
+                      return IconButton(
+                        icon: Icon(
+                          Icons.volume_off_outlined,
+                          color: isEnabled
+                              ? Colors.tealAccent
+                              : Colors.white70,
+                        ),
+                        onPressed: () {
+                          audioHandler.setSkipSilence(!isEnabled);
+                        },
+                      );
+                    }
                   ),
                   // Download Button
                   DownloadButton(
                       episode: widget.episode, color: Colors.white70),
                 ],
               ),
+            ),
+            const SizedBox(height: 12),
+            // Time Saved Display
+            StreamBuilder<Duration>(
+              stream: audioHandler.totalTimeSavedStream,
+              builder: (context, snapshot) {
+                final saved = snapshot.data ?? Duration.zero;
+                if (saved == Duration.zero) return const SizedBox.shrink();
+                return Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.tealAccent.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '智能跳过已为您节省了 ${_formatDurationSaved(saved)}',
+                    style: const TextStyle(
+                        color: Colors.tealAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 8),
             // Progress Bar
@@ -396,6 +421,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         mediaItem?.duration ?? Duration.zero,
       );
     });
+  }
+
+  String _formatDurationSaved(Duration duration) {
+    if (duration.inMinutes > 0) {
+      return '${duration.inMinutes}分${duration.inSeconds % 60}秒';
+    }
+    return '${duration.inSeconds}秒';
   }
 
   void _showSleepTimerDialog(

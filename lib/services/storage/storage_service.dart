@@ -8,6 +8,8 @@ class StorageService {
   static const String _downloadKey = 'downloaded_episodes';
   static const String _historyKey = 'play_history';
   static const String _positionKey = 'playback_positions';
+  static const String _timeSavedKey = 'total_time_saved';
+  static const String _skipSilenceKey = 'skip_silence_enabled';
 
   Future<void> subscribe(Podcast podcast) async {
     final prefs = await SharedPreferences.getInstance();
@@ -111,6 +113,28 @@ class StorageService {
       }
     }
     await prefs.setString(_positionKey, jsonEncode(positions));
+  }
+
+  Future<void> addTimeSaved(Duration duration) async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentMs = prefs.getInt(_timeSavedKey) ?? 0;
+    await prefs.setInt(_timeSavedKey, currentMs + duration.inMilliseconds);
+  }
+
+  Future<Duration> getTotalTimeSaved() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ms = prefs.getInt(_timeSavedKey) ?? 0;
+    return Duration(milliseconds: ms);
+  }
+
+  Future<void> saveSkipSilenceEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_skipSilenceKey, enabled);
+  }
+
+  Future<bool> getSkipSilenceEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_skipSilenceKey) ?? false;
   }
 
   Future<Duration> getPosition(String guid) async {

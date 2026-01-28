@@ -17,6 +17,9 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   Timer? _saveTimer;
   Timer? _sleepTimer;
   final _sleepTimerController = StreamController<Duration?>.broadcast();
+  bool _isSkipSilenceEnabled = false;
+  Duration _totalSavedTime = Duration.zero;
+  final _timeSavedController = StreamController<Duration>.broadcast();
 
   EchoPodAudioHandler(this._liveActivityService, this._storageService) {
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
@@ -29,13 +32,44 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
       }
     });
 
-    // Listen to position changes to update Live Activity
+    // Listen to position changes to update Live Activity and track saved time
+    DateTime? lastPositionUpdate;
+    Duration? lastPosition;
+
     _player.positionStream.listen((position) {
       _updateLiveActivity(position);
+
+      if (_isSkipSilenceEnabled &&
+          _player.playing &&
+          lastPosition != null &&
+          lastPositionUpdate != null) {
+        final now = DateTime.now();
+        final wallElapsedMs = now.difference(lastPositionUpdate!).inMilliseconds;
+        final audioElapsedMs = (position - lastPosition!).inMilliseconds;
+        final expectedElapsedMs = (wallElapsedMs * _player.speed).round();
+
+        // If audio jumped forward more than expected (allowing for some jitter)
+        // threshold 300ms jitter is safe for 1 second interval
+        if (audioElapsedMs > expectedElapsedMs + 300) {
+          final savedMs = audioElapsedMs - expectedElapsedMs;
+          if (savedMs > 0 && savedMs < 10000) { // Limit to 10s jump to avoid seek confusion
+            final saved = Duration(milliseconds: savedMs);
+            _totalSavedTime += saved;
+            _timeSavedController.add(_totalSavedTime);
+            _storageService.addTimeSaved(saved);
+          }
+        }
+      }
+      lastPosition = position;
+      lastPositionUpdate = DateTime.now();
     });
 
     // Listen to playing state changes
     _player.playingStream.listen((playing) {
+      if (!playing) {
+        lastPosition = null;
+        lastPositionUpdate = null;
+      }
       _updateLiveActivity(_player.position);
       if (playing && _currentEpisode != null) {}
     });
@@ -44,6 +78,14 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> _init() async {
+    // Load saved time
+    _totalSavedTime = await _storageService.getTotalTimeSaved();
+    _timeSavedController.add(_totalSavedTime);
+
+    // Load skip silence setting
+    _isSkipSilenceEnabled = await _storageService.getSkipSilenceEnabled();
+    await _player.setSkipSilenceEnabled(_isSkipSilenceEnabled);
+
     // Load history and populate queue
     try {
       final history = await _storageService.getPlayHistory();
@@ -186,9 +228,17 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> setSpeed(double speed) => _player.setSpeed(speed);
 
+  bool get isSkipSilenceEnabled => _isSkipSilenceEnabled;
+
   Future<void> setSkipSilence(bool enabled) async {
+    _isSkipSilenceEnabled = enabled;
+    await _storageService.saveSkipSilenceEnabled(enabled);
     await _player.setSkipSilenceEnabled(enabled);
   }
+
+  Stream<bool> get skipSilenceStream => _player.skipSilenceEnabledStream;
+
+  Stream<Duration> get totalTimeSavedStream => _timeSavedController.stream;
 
   Stream<Duration?> get sleepTimerStream => _sleepTimerController.stream;
 
