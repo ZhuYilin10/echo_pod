@@ -445,35 +445,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           fontSize: 18,
                           fontWeight: FontWeight.bold)),
                 ),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  alignment: WrapAlignment.center,
-                  children: [0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0]
-                      .map((s) => ChoiceChip(
-                            label: Text('${s}x'),
-                            selected: (currentSpeed - s).abs() < 0.01,
-                            onSelected: (selected) {
-                              if (selected) {
-                                setModalState(() => currentSpeed = s);
-                                audioHandler.setSpeed(s);
-                              }
-                            },
-                            backgroundColor: Colors.white10,
-                            selectedColor: Colors.tealAccent,
-                            labelStyle: TextStyle(
-                                color: (currentSpeed - s).abs() < 0.01
-                                    ? Colors.black
-                                    : Colors.white),
-                          ))
-                      .toList(),
-                ),
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Row(
                     children: [
-                      const Text('0.5x', style: TextStyle(color: Colors.white54)),
+                      const Text('0.5x',
+                          style: TextStyle(color: Colors.white54)),
                       Expanded(
                         child: Slider(
                           value: currentSpeed.clamp(0.5, 3.0),
@@ -483,18 +461,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           activeColor: Colors.tealAccent,
                           inactiveColor: Colors.white10,
                           onChanged: (val) {
-                            setModalState(() => currentSpeed = double.parse(val.toStringAsFixed(1)));
+                            setModalState(() => currentSpeed =
+                                double.parse(val.toStringAsFixed(1)));
                             audioHandler.setSpeed(currentSpeed);
                           },
                         ),
                       ),
-                      const Text('3.0x', style: TextStyle(color: Colors.white54)),
+                      const Text('3.0x',
+                          style: TextStyle(color: Colors.white54)),
                     ],
                   ),
                 ),
                 Text(
-                  '当前：${currentSpeed.toStringAsFixed(1)}x',
-                  style: const TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold),
+                  '${currentSpeed.toStringAsFixed(1)}x',
+                  style: const TextStyle(
+                      color: Colors.tealAccent,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 SwitchListTile(
