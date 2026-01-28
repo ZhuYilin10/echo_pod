@@ -449,10 +449,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   spacing: 12,
                   runSpacing: 12,
                   alignment: WrapAlignment.center,
-                  children: [0.5, 0.8, 1.0, 1.2, 1.5, 1.8, 2.0, 2.5, 3.0]
+                  children: [0.5, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0]
                       .map((s) => ChoiceChip(
                             label: Text('${s}x'),
-                            selected: currentSpeed == s,
+                            selected: (currentSpeed - s).abs() < 0.01,
                             onSelected: (selected) {
                               if (selected) {
                                 setModalState(() => currentSpeed = s);
@@ -462,13 +462,41 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                             backgroundColor: Colors.white10,
                             selectedColor: Colors.tealAccent,
                             labelStyle: TextStyle(
-                                color: currentSpeed == s
+                                color: (currentSpeed - s).abs() < 0.01
                                     ? Colors.black
                                     : Colors.white),
                           ))
                       .toList(),
                 ),
                 const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    children: [
+                      const Text('0.5x', style: TextStyle(color: Colors.white54)),
+                      Expanded(
+                        child: Slider(
+                          value: currentSpeed.clamp(0.5, 3.0),
+                          min: 0.5,
+                          max: 3.0,
+                          divisions: 25, // 0.1 step increments
+                          activeColor: Colors.tealAccent,
+                          inactiveColor: Colors.white10,
+                          onChanged: (val) {
+                            setModalState(() => currentSpeed = double.parse(val.toStringAsFixed(1)));
+                            audioHandler.setSpeed(currentSpeed);
+                          },
+                        ),
+                      ),
+                      const Text('3.0x', style: TextStyle(color: Colors.white54)),
+                    ],
+                  ),
+                ),
+                Text(
+                  '当前：${currentSpeed.toStringAsFixed(1)}x',
+                  style: const TextStyle(color: Colors.tealAccent, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
                 SwitchListTile(
                   title: const Text('应用于该频道',
                       style: TextStyle(color: Colors.white, fontSize: 14)),
