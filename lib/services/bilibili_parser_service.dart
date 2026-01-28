@@ -55,8 +55,10 @@ class BilibiliParserService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        if (data['code'] == 200) {
-          final videoData = data['data'][0]; // Usually the first item
+        if (data['code'] == 200 &&
+            data['data'] != null &&
+            (data['data'] as List).isNotEmpty) {
+          final videoData = data['data'][0];
 
           return BilibiliVideoInfo(
             title: data['title'] ?? 'Unknown Title',
@@ -67,7 +69,7 @@ class BilibiliParserService {
             authorAvatar: data['user']?['user_img'],
           );
         } else {
-          throw Exception('Bilibili API Error: ${data['msg']}');
+          throw Exception('未找到有效的视频流地址');
         }
       } else {
         throw Exception('HTTP Error: ${response.statusCode}');

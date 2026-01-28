@@ -76,10 +76,13 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
     _player.positionStream.listen((position) {
       _updateLiveActivity(position);
-      // Update playback state with the current position to keep UI in sync
-      playbackState.add(_transformEvent(_player.playbackEvent));
+      if (!_isWebMode) {
+        // Update playback state with the current position to keep UI in sync
+        playbackState.add(_transformEvent(_player.playbackEvent));
+      }
 
-      if (_isSkipSilenceEnabled &&
+      if (!_isWebMode &&
+          _isSkipSilenceEnabled &&
           _player.playing &&
           lastPosition != null &&
           lastPositionUpdate != null) {
@@ -108,12 +111,13 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
     // Listen to playing state changes
     _player.playingStream.listen((playing) {
-      if (!playing) {
-        lastPosition = null;
-        lastPositionUpdate = null;
+      if (!_isWebMode) {
+        if (!playing) {
+          lastPosition = null;
+          lastPositionUpdate = null;
+        }
+        _updateLiveActivity(_player.position);
       }
-      _updateLiveActivity(_player.position);
-      if (playing && _currentEpisode != null) {}
     });
 
     _init();
