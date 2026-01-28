@@ -72,21 +72,29 @@ class MiniPlayer extends ConsumerWidget {
                         );
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)),
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => PlayerScreen(episode: episode),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        return FadeTransition(opacity: animation, child: child);
+                      },
+                    ),
                   );
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Row(
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          mediaItem.artUri?.toString() ?? '',
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.podcasts),
+                      Hero(
+                        tag: 'episode_artwork_${mediaItem.id}',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            mediaItem.artUri?.toString() ?? '',
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(Icons.podcasts),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),

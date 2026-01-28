@@ -7,6 +7,7 @@ import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
 import '../../services/audio/audio_handler.dart';
 import 'playlist_screen.dart';
+import '../share/share_screen.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -22,19 +23,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final audioHandler = ref.watch(audioHandlerProvider);
 
     return Scaffold(
-      backgroundColor:
-          const Color(0xFF001F1F), // Dark teal background from screenshot
+      backgroundColor: const Color(0xFF001F1F),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.expand_more, size: 32),
+          icon: const Icon(Icons.expand_more, size: 32, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          IconButton(icon: const Icon(Icons.star_border), onPressed: () {}),
           IconButton(
-              icon: const Icon(Icons.ios_share_rounded), onPressed: () {}),
+            icon: const Icon(Icons.share_rounded, color: Colors.white),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ShareScreen(episode: widget.episode)),
+            ),
+          ),
         ],
       ),
       body: Padding(
@@ -42,25 +46,29 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         child: Column(
           children: [
             const Spacer(),
-            // Large Artwork
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
+            // Large Artwork with Hero
+            Hero(
+              tag: 'episode_artwork_${widget.episode.guid}',
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
                       color: Colors.black.withOpacity(0.4),
                       blurRadius: 40,
-                      offset: const Offset(0, 20))
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: Image.network(
-                    widget.episode.imageUrl ?? '',
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+                      offset: const Offset(0, 20),
+                    )
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Image.network(
+                      widget.episode.imageUrl ?? '',
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
@@ -72,10 +80,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 12),
             Row(
@@ -83,27 +88,25 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               children: [
                 Text(
                   widget.episode.podcastTitle,
-                  style:
-                      const TextStyle(color: Colors.tealAccent, fontSize: 16),
+                  style: const TextStyle(color: Colors.tealAccent, fontSize: 16),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.tealAccent,
+                    color: Colors.tealAccent.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.tealAccent),
                   ),
-                  child: const Text('+ 订阅',
-                      style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    '+ 订阅',
+                    style: TextStyle(color: Colors.tealAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
             const Spacer(),
-            // Custom Progress Bar (Waveform style placeholder or linear)
+            // Progress Bar
             StreamBuilder<PositionData>(
               stream: _positionDataStream(audioHandler),
               builder: (context, snapshot) {
@@ -118,6 +121,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   thumbColor: Colors.white,
                   barHeight: 4,
                   thumbRadius: 6,
+                  timeLabelTextStyle: const TextStyle(color: Colors.white70),
                 );
               },
             ),
@@ -128,34 +132,23 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               builder: (context, snapshot) {
                 final playing = snapshot.data?.playing ?? false;
                 return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.radio_outlined, color: Colors.grey),
                     IconButton(
-                      icon: const Icon(Icons.replay_10,
-                          size: 36, color: Colors.white),
-                      onPressed: () => audioHandler.seek(
-                          audioHandler.playbackState.value.updatePosition -
-                              const Duration(seconds: 10)),
+                      icon: const Icon(Icons.replay_15, size: 36, color: Colors.white),
+                      onPressed: () => audioHandler.seek(audioHandler.playbackState.value.updatePosition - const Duration(seconds: 15)),
                     ),
+                    const SizedBox(width: 24),
                     IconButton(
                       iconSize: 84,
-                      icon: Icon(
-                          playing
-                              ? Icons.pause_circle_filled
-                              : Icons.play_circle_filled,
-                          color: Colors.white),
-                      onPressed:
-                          playing ? audioHandler.pause : audioHandler.play,
+                      icon: Icon(playing ? Icons.pause_circle_filled : Icons.play_circle_filled, color: Colors.white),
+                      onPressed: playing ? audioHandler.pause : audioHandler.play,
                     ),
+                    const SizedBox(width: 24),
                     IconButton(
-                      icon: const Icon(Icons.forward_30,
-                          size: 36, color: Colors.white),
-                      onPressed: () => audioHandler.seek(
-                          audioHandler.playbackState.value.updatePosition +
-                              const Duration(seconds: 30)),
+                      icon: const Icon(Icons.forward_30, size: 36, color: Colors.white),
+                      onPressed: () => audioHandler.seek(audioHandler.playbackState.value.updatePosition + const Duration(seconds: 30)),
                     ),
-                    const Icon(Icons.thumb_up_alt_outlined, color: Colors.grey),
                   ],
                 );
               },
@@ -163,23 +156,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             const SizedBox(height: 48),
             // Bottom Bar
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.info_outline, color: Colors.grey),
                 GestureDetector(
-                  onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const PlaylistScreen())),
-                  child: Row(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PlaylistScreen())),
+                  child: const Row(
                     children: [
-                      const Icon(Icons.playlist_play, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      const Text('播放列表', style: TextStyle(color: Colors.grey)),
+                      Icon(Icons.playlist_play, color: Colors.white54),
+                      SizedBox(width: 4),
+                      Text('播放列表', style: TextStyle(color: Colors.white54)),
                     ],
                   ),
                 ),
-                const Icon(Icons.comment_outlined, color: Colors.grey),
               ],
             ),
             const SizedBox(height: 32),

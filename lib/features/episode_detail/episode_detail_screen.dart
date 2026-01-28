@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+import 'package:audio_service/audio_service.dart';
 import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
-import '../player/player_screen.dart';
 
 class EpisodeDetailScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -34,15 +34,19 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final audioHandler = ref.watch(audioHandlerProvider);
+
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
+        backgroundColor: Colors.black,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           TextButton.icon(
-            onPressed: () {}, // TODO: Subscribe podcast logic
+            onPressed: () {},
             icon: const Icon(Icons.add, size: 18),
             label: const Text('订阅'),
             style: TextButton.styleFrom(
@@ -50,8 +54,7 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
               foregroundColor: Colors.tealAccent,
             ),
           ),
-          IconButton(icon: const Icon(Icons.ios_share_rounded), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.more_horiz), onPressed: () {}),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(
@@ -62,14 +65,17 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    image: DecorationImage(
-                      image: NetworkImage(widget.episode.imageUrl ?? ''),
-                      fit: BoxFit.cover,
+                Hero(
+                  tag: 'episode_artwork_${widget.episode.guid}',
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      image: DecorationImage(
+                        image: NetworkImage(widget.episode.imageUrl ?? ''),
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
@@ -80,7 +86,7 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                     children: [
                       Text(
                         widget.episode.title,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -90,13 +96,46 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.play_circle_fill, size: 48, color: Colors.white),
-                  onPressed: () {
-                    ref.read(audioHandlerProvider).playEpisode(widget.episode);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => PlayerScreen(episode: widget.episode)),
+                StreamBuilder<MediaItem?>(
+                  stream: audioHandler.mediaItem,
+                  builder: (context, snapshot) {
+                    final isCurrent = snapshot.data?.id == widget.episode.guid;
+                    return StreamBuilder<PlaybackState>(
+                      stream: audioHandler.playbackState,
+                      builder: (context, playbackSnapshot) {
+                        final playing = playbackSnapshot.data?.playing ?? false;
+                        final isBusy = isCurrent && playing;
+                        
+                        return Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (isCurrent)
+                              SizedBox(
+                                width: 54,
+                                height: 54,
+                                child: CircularProgressIndicator(
+                                  value: _calculateProgress(playbackSnapshot.data, snapshot.data),
+                                  strokeWidth: 2,
+                                  color: Colors.tealAccent,
+                                ),
+                              ),
+                            IconButton(
+                              icon: Icon(
+                                isBusy ? Icons.pause_circle_fill : Icons.play_circle_fill,
+                                size: 48,
+                                color: Colors.white,
+                              ),
+                              onPressed: () {
+                                if (isCurrent) {
+                                  playing ? audioHandler.pause() : audioHandler.play();
+                                } else {
+                                  audioHandler.playEpisode(widget.episode);
+                                }
+                              },
+                            ),
+                          ],
+                        );
+                      },
                     );
                   },
                 ),
@@ -108,15 +147,9 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                 const Icon(Icons.timer_outlined, size: 16, color: Colors.blueAccent),
                 const SizedBox(width: 4),
                 Text(
-                  '剩余${widget.episode.duration ?? '未知'}分钟 · ${widget.episode.pubDate?.year}/${widget.episode.pubDate?.month}/${widget.episode.pubDate?.day}',
+                  '${widget.episode.duration ?? '未知'} · ${widget.episode.pubDate?.year}/${widget.episode.pubDate?.month}/${widget.episode.pubDate?.day}',
                   style: const TextStyle(color: Colors.grey, fontSize: 13),
                 ),
-                const Spacer(),
-                const Icon(Icons.sort, color: Colors.blueAccent, size: 20),
-                const SizedBox(width: 16),
-                const Icon(Icons.comment_outlined, color: Colors.blueAccent, size: 20),
-                const SizedBox(width: 16),
-                const Icon(Icons.favorite_border, color: Colors.blueAccent, size: 20),
               ],
             ),
             const SizedBox(height: 32),
@@ -137,23 +170,31 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
               const Center(child: CircularProgressIndicator())
             else if (_aiSummary != null)
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.grey[900],
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(_aiSummary!),
+                child: Text(_aiSummary!, style: const TextStyle(color: Colors.white70, height: 1.5)),
               ),
             const SizedBox(height: 24),
-            const Text('本期节目的主要内容有：', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text('本期节目的主要内容有：', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
             const SizedBox(height: 12),
             HtmlWidget(
               widget.episode.description ?? '',
-              textStyle: const TextStyle(height: 1.8),
+              textStyle: const TextStyle(height: 1.8, color: Colors.white),
             ),
           ],
         ),
       ),
     );
+  }
+
+  double? _calculateProgress(PlaybackState? state, MediaItem? item) {
+    if (state == null || item == null || item.duration == null || item.duration == Duration.zero) {
+      return null;
+    }
+    return state.position.inMilliseconds / item.duration!.inMilliseconds;
   }
 }

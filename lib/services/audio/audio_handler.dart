@@ -86,14 +86,15 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<AudioSource> _buildAudioSource(MediaItem item) async {
+    final audioUrl = item.extras?['audioUrl'] as String? ?? item.id;
     final directory = await getApplicationDocumentsDirectory();
-    final fileName = item.id.split('/').last.split('?').first;
+    final fileName = audioUrl.split('/').last.split('?').first;
     final localFile = File('${directory.path}/downloads/$fileName');
     
     if (localFile.existsSync()) {
       return AudioSource.file(localFile.path, tag: item);
     } else {
-      return LockCachingAudioSource(Uri.parse(item.id), tag: item);
+      return LockCachingAudioSource(Uri.parse(audioUrl), tag: item);
     }
   }
 
@@ -156,7 +157,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
     _currentEpisode = episode;
 
     final item = MediaItem(
-      id: episode.audioUrl!,
+      id: episode.guid, // Use guid as ID for consistency and Hero tags
       album: episode.podcastTitle,
       title: episode.title,
       artUri: episode.imageUrl != null ? Uri.parse(episode.imageUrl!) : null,
