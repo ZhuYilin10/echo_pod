@@ -161,6 +161,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
       title: episode.title,
       artUri: episode.imageUrl != null ? Uri.parse(episode.imageUrl!) : null,
       duration: _parseDuration(episode.duration),
+      extras: episode.toJson(),
     );
 
     // Clear current queue and play this one immediately

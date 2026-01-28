@@ -49,9 +49,15 @@ class HistoryScreen extends ConsumerWidget {
                 subtitle: Text(episode.podcastTitle, style: Theme.of(context).textTheme.bodySmall),
                 onTap: () {
                   ref.read(audioHandlerProvider).playEpisode(episode, autoPlay: false);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)),
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('已加载: ${episode.title}'),
+                      action: SnackBarAction(
+                        label: '播放',
+                        onPressed: () => ref.read(audioHandlerProvider).play(),
+                      ),
+                      duration: const Duration(seconds: 2),
+                    ),
                   );
                 },
               );

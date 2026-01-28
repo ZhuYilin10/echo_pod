@@ -61,13 +61,15 @@ class MiniPlayer extends ConsumerWidget {
               // Main Content
               InkWell(
                 onTap: () {
-                  final episode = Episode(
-                    guid: mediaItem.id,
-                    title: mediaItem.title,
-                    podcastTitle: mediaItem.album ?? '',
-                    imageUrl: mediaItem.artUri?.toString(),
-                    audioUrl: mediaItem.id,
-                  );
+                  final episode = mediaItem.extras != null
+                      ? Episode.fromJson(mediaItem.extras!)
+                      : Episode(
+                          guid: mediaItem.id,
+                          title: mediaItem.title,
+                          podcastTitle: mediaItem.album ?? '',
+                          imageUrl: mediaItem.artUri?.toString(),
+                          audioUrl: mediaItem.id,
+                        );
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)),

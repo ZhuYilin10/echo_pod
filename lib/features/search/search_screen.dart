@@ -143,6 +143,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> with SingleTickerPr
               ],
             ),
             isThreeLine: true,
+            onTap: () {
+              // Creating a mock episode from search results for immediate playback
+              final episode = Episode(
+                guid: 'search_${result.episodeTitle}_${result.timestamp}',
+                title: result.episodeTitle,
+                podcastTitle: result.podcastTitle,
+                description: result.snippet,
+                // audioUrl: needs actual url, for now mock or add to SearchResult
+              );
+              ref.read(audioHandlerProvider).playEpisode(episode, autoPlay: false);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('已加载: ${episode.title}'),
+                  action: SnackBarAction(
+                    label: '播放',
+                    onPressed: () => ref.read(audioHandlerProvider).play(),
+                  ),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
           ),
         );
       },
