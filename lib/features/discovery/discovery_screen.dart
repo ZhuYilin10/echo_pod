@@ -135,16 +135,39 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     );
   }
 
-  void _handleWebUrl(String url) {
+  void _handleWebUrl(String input) {
+    // Smart Link Extraction
+    final urlRegExp = RegExp(
+        r'((https?:\/\/)[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?)',
+        caseSensitive: false);
+    final match = urlRegExp.firstMatch(input);
+    
+    if (match == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('未发现有效链接')),
+      );
+      return;
+    }
+    
+    final url = match.group(0)!;
+    
+    // Extract potential title from bracketed text 【...】
+    String title = '网页音频解析中...';
+    final titleRegExp = RegExp(r'【([^】]+)】');
+    final titleMatch = titleRegExp.firstMatch(input);
+    if (titleMatch != null) {
+      title = titleMatch.group(1)!;
+    }
+
     // For now, create a mock episode and play via our web infrastructure
     final episode = Episode(
       guid: 'web_${url.hashCode}',
-      title: '网页音频解析中...',
+      title: title,
       podcastTitle: '万物皆可播',
-      audioUrl: url, // Store URL in audioUrl for the web player to catch
+      audioUrl: url,
       podcastFeedUrl: 'web_pseudo_feed',
       imageUrl:
-          'https://images.unsplash.com/photo-1478737270239-2f02b77ac6d5?q=80&w=1000&auto=format&fit=crop', // Default "Audio/Tech" style image
+          'https://images.unsplash.com/photo-1478737270239-2f02b77ac6d5?q=80&w=1000&auto=format&fit=crop',
     );
 
     ref.read(audioHandlerProvider).playEpisode(episode);
