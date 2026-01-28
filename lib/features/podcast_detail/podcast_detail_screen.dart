@@ -253,6 +253,13 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
         episode.pubDate != null ? '${episode.pubDate!.year}-${episode.pubDate!.month}-${episode.pubDate!.day}' : '',
         style: Theme.of(context).textTheme.bodySmall,
       ),
+      leading: Hero(
+        tag: 'episode_artwork_${episode.guid}',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Image.network(episode.imageUrl ?? '', width: 40, height: 40, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.podcasts)),
+        ),
+      ),
       trailing: progress != null
           ? SizedBox(
               width: 24,

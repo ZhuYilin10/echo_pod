@@ -72,12 +72,7 @@ class MiniPlayer extends ConsumerWidget {
                         );
                   Navigator.push(
                     context,
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) => PlayerScreen(episode: episode),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                        return FadeTransition(opacity: animation, child: child);
-                      },
-                    ),
+                    MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)),
                   );
                 },
                 child: Padding(

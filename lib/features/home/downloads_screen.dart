@@ -37,14 +37,17 @@ class DownloadsScreen extends ConsumerWidget {
             itemBuilder: (context, index) {
               final episode = episodes[index];
               return ListTile(
-                leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    episode.imageUrl ?? '',
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.podcasts),
+                leading: Hero(
+                  tag: 'episode_artwork_${episode.guid}',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      episode.imageUrl ?? '',
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.podcasts),
+                    ),
                   ),
                 ),
                 title: Text(episode.title, maxLines: 2, overflow: TextOverflow.ellipsis),

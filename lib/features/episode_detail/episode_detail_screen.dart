@@ -183,6 +183,9 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
             const SizedBox(height: 12),
             HtmlWidget(
               widget.episode.description ?? '',
+              customStylesBuilder: (element) {
+                return {'color': 'white'};
+              },
               textStyle: const TextStyle(height: 1.8, color: Colors.white),
             ),
           ],
