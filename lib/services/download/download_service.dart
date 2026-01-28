@@ -5,9 +5,9 @@ import 'package:path_provider/path_provider.dart';
 class DownloadService {
   final Dio _dio = Dio();
   
-  // Track download status
   Future<bool> isDownloaded(String audioUrl) async {
-    final file = File(await _getLocalPath(audioUrl));
+    final path = await _getLocalPath(audioUrl);
+    final file = File(path);
     return file.existsSync();
   }
 
@@ -35,8 +35,7 @@ class DownloadService {
           }
         },
       );
-    } catch (e) {
-      print('Download error: $e');
+    } catch (_) {
       rethrow;
     }
   }

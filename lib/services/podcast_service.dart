@@ -38,8 +38,7 @@ class PodcastService {
           imageUrl: item['artworkUrl600'] ?? item['artworkUrl100'],
         );
       }).toList();
-    } catch (e) {
-      print('Error searching podcasts: $e');
+    } catch (_) {
       return [];
     }
   }
@@ -61,8 +60,7 @@ class PodcastService {
           podcastTitle: feed.title ?? '',
         );
       }).toList() ?? [];
-    } catch (e) {
-      print('Error fetching episodes: $e');
+    } catch (_) {
       return [];
     }
   }
@@ -79,8 +77,7 @@ class PodcastService {
         imageUrl: feed.itunes?.image?.href ?? feed.image?.url,
         description: feed.description,
       );
-    } catch (e) {
-      print('Error parsing RSS metadata: $e');
+    } catch (_) {
       return null;
     }
   }

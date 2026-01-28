@@ -7,7 +7,6 @@ import 'services/storage/storage_service.dart';
 import 'services/audio/audio_handler.dart';
 import 'services/platform/live_activity_service.dart';
 import 'core/providers/providers.dart';
-import 'features/home/home_screen.dart';
 
 import 'features/navigation_wrapper.dart';
 

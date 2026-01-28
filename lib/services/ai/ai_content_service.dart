@@ -8,7 +8,6 @@ class AIContentService {
     _client = OpenAIClient(apiKey: apiKey);
   }
 
-  // Generate a summary for the episode
   Future<String> getEpisodeSummary(String title, String description) async {
     if (apiKey.isEmpty) {
       return "这是来自 EchoPod AI 的模拟摘要：本期节目深入探讨了中文播客市场的现状，重点分析了用户听众的增长趋势以及内容创作者面临的挑战。主播们认为，垂直领域的深度内容将是未来的爆发点。";
@@ -31,12 +30,11 @@ class AIContentService {
         ),
       );
       return response.choices.first.message.content ?? "暂无摘要";
-    } catch (e) {
-      return "摘要生成失败: $e";
+    } catch (_) {
+      return "摘要生成失败";
     }
   }
 
-  // Extract a golden sentence
   Future<String> extractGoldenSentence(String title, String description) async {
     if (apiKey.isEmpty) {
       return "世界上只有一种英雄主义，就是看清生活的真相后依然热爱它。";
@@ -59,12 +57,11 @@ class AIContentService {
         ),
       );
       return response.choices.first.message.content?.replaceAll('"', '').replaceAll('“', '').replaceAll('”', '') ?? "智慧往往藏在那些被我们忽略的对话里。";
-    } catch (e) {
+    } catch (_) {
       return "金句提取失败，但美好的思想永存。";
     }
   }
 
-  // Answer questions about the episode (Mocked with context for now)
   Future<String> askEpisodeQuestion(String question, String context) async {
     if (apiKey.isEmpty) {
       return "这是一个模拟回答：关于您提到的‘$question’，播客中提到这通常是由于市场准入门槛降低导致的，建议关注具体的合规性要求。";
@@ -87,8 +84,8 @@ class AIContentService {
         ),
       );
       return response.choices.first.message.content ?? "AI 暂时无法回答这个问题";
-    } catch (e) {
-      return "AI 响应异常: $e";
+    } catch (_) {
+      return "AI 响应异常";
     }
   }
 }

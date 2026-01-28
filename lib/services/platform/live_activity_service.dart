@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 
 class LiveActivityService {
-  static const MethodChannel _channel = MethodChannel('com.echopod.live_activity');
+  static const _channel = MethodChannel('com.echopod.live_activity');
 
   Future<void> startLiveActivity({
     required String podcastTitle,
@@ -18,9 +18,7 @@ class LiveActivityService {
         'progress': progress,
         'isPlaying': isPlaying,
       });
-    } on PlatformException catch (e) {
-      print("Failed to start Live Activity: '${e.message}'.");
-    }
+    } on PlatformException catch (_) {}
   }
 
   Future<void> updateLiveActivity({
@@ -32,16 +30,12 @@ class LiveActivityService {
         'progress': progress,
         'isPlaying': isPlaying,
       });
-    } on PlatformException catch (e) {
-      print("Failed to update Live Activity: '${e.message}'.");
-    }
+    } on PlatformException catch (_) {}
   }
 
   Future<void> stopLiveActivity() async {
     try {
       await _channel.invokeMethod('stopLiveActivity');
-    } on PlatformException catch (e) {
-      print("Failed to stop Live Activity: '${e.message}'.");
-    }
+    } on PlatformException catch (_) {}
   }
 }

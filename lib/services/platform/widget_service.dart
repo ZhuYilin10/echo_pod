@@ -3,11 +3,6 @@ import 'package:flutter/services.dart';
 class WidgetService {
   static const _channel = MethodChannel('com.echopod.ai/widget');
 
-  /// Updates the iOS Home Screen Widget with a new golden sentence.
-  /// 
-  /// [quote]: The AI extracted golden sentence.
-  /// [author]: The podcast or episode title.
-  /// [imageUrl]: The artwork URL.
   Future<void> updateQuoteWidget({
     required String quote,
     required String author,
@@ -19,8 +14,6 @@ class WidgetService {
         'author': author,
         'imageUrl': imageUrl,
       });
-    } on PlatformException catch (e) {
-      print("Failed to update widget: '${e.message}'.");
-    }
+    } on PlatformException catch (_) {}
   }
 }

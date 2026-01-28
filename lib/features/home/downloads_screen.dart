@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
-import '../player/player_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
 
 class DownloadsScreen extends ConsumerWidget {
