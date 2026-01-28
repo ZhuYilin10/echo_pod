@@ -44,6 +44,10 @@ class PodcastService {
   }
 
   Future<List<Episode>> fetchEpisodes(String feedUrl) async {
+    // Check if it's a simulated RSS (Bilibili/YouTube pseudo-URL)
+    if (feedUrl.startsWith('echopod://bilibili/')) {
+      return _fetchBilibiliPseudoEpisodes(feedUrl);
+    }
     try {
       final response = await _dio.get(feedUrl);
       final feed = RssFeed.parse(response.data);
@@ -66,7 +70,25 @@ class PodcastService {
     }
   }
 
+  Future<List<Episode>> _fetchBilibiliPseudoEpisodes(String pseudoUrl) async {
+    // Expected format: echopod://bilibili/user/{uid}
+    final uid = pseudoUrl.split('/').last;
+    try {
+      // Use RSSHub as a reliable bridge for fetching Bilibili user's video list as RSS
+      final rssHubUrl = 'https://rsshub.app/bilibili/user/video/$uid';
+      return fetchEpisodes(rssHubUrl);
+    } catch (e) {
+      print('Error fetching Bilibili pseudo episodes: $e');
+      return [];
+    }
+  }
+
   Future<Podcast?> fetchPodcastMetadata(String feedUrl) async {
+    if (feedUrl.startsWith('echopod://bilibili/')) {
+      final uid = feedUrl.split('/').last;
+      final rssHubUrl = 'https://rsshub.app/bilibili/user/video/$uid';
+      return fetchPodcastMetadata(rssHubUrl);
+    }
     try {
       final response = await _dio.get(feedUrl);
       final feed = RssFeed.parse(response.data);

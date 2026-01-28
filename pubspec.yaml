@@ -37,6 +37,8 @@ dependencies:
   share_plus: ^10.1.0 # For exporting files
   rxdart: ^0.28.0
   screenshot: ^3.0.0
+  flutter_inappwebview: ^6.1.5
+  receive_sharing_intent: ^1.6.3
   
 dev_dependencies:
   flutter_test:

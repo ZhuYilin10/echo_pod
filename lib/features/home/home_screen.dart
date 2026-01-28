@@ -57,11 +57,25 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  void _handleManualSubscription(BuildContext context, WidgetRef ref, String url) async {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('正在解析 RSS 地址...')));
+  void _handleManualSubscription(
+      BuildContext context, WidgetRef ref, String url) async {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('正在解析订阅地址...')));
+    
+    String finalUrl = url;
+    // Bilibili link detection
+    if (url.contains('bilibili.com/')) {
+      final regExp = RegExp(r'space\.bilibili\.com/(\d+)');
+      final match = regExp.firstMatch(url);
+      if (match != null) {
+        final uid = match.group(1);
+        finalUrl = 'echopod://bilibili/user/$uid';
+      }
+    }
+    
     final podcastService = ref.read(podcastServiceProvider);
     final storageService = ref.read(storageServiceProvider);
-    final podcast = await podcastService.fetchPodcastMetadata(url);
+    final podcast = await podcastService.fetchPodcastMetadata(finalUrl);
     
     if (podcast != null) {
       await storageService.subscribe(podcast);
