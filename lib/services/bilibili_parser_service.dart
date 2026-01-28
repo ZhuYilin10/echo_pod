@@ -21,7 +21,9 @@ class BilibiliVideoInfo {
 }
 
 class BilibiliParserService {
-  static const String _apiUrl = 'https://api.mir6.com/api/bzjiexi';
+  // Replace with your Tencent Cloud SCF URL after deployment
+  static const String _scfApiUrl = 'https://service-xxxx.gz.apigw.tencentcs.com/release/parse';
+  static const String _fallbackApiUrl = 'https://api.mir6.com/api/bzjiexi';
 
   Future<String> resolveShortUrl(String url) async {
     if (!url.contains('b23.tv')) return url;
@@ -44,7 +46,34 @@ class BilibiliParserService {
   Future<BilibiliVideoInfo> parse(String url) async {
     try {
       final resolvedUrl = await resolveShortUrl(url);
-      final uri = Uri.parse(_apiUrl).replace(queryParameters: {
+      
+      // Attempt to use Tencent Cloud SCF first
+      try {
+        final scfUri = Uri.parse(_scfApiUrl).replace(queryParameters: {
+          'url': resolvedUrl,
+        });
+        
+        debugPrint('BilibiliParser: Requesting SCF $scfUri');
+        final response = await http.get(scfUri).timeout(const Duration(seconds: 15));
+        
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['status'] == 'success') {
+            return BilibiliVideoInfo(
+              title: data['title'] ?? 'Unknown Title',
+              coverUrl: data['cover_url'],
+              videoUrl: data['video_url'],
+              description: data['description'],
+              author: data['author'],
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('SCF Error, falling back to backup API: $e');
+      }
+
+      // Fallback to legacy API if SCF fails or is not yet configured
+      final uri = Uri.parse(_fallbackApiUrl).replace(queryParameters: {
         'url': resolvedUrl,
         'type': 'json',
       });
