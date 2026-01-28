@@ -7,13 +7,15 @@ import '../../core/providers/providers.dart';
 import '../ai_agent/ai_agent_screen.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
 import '../player/player_screen.dart';
+import '../common/download_button.dart';
 
 class EpisodeDetailScreen extends ConsumerStatefulWidget {
   final Episode episode;
   const EpisodeDetailScreen({super.key, required this.episode});
 
   @override
-  ConsumerState<EpisodeDetailScreen> createState() => _EpisodeDetailScreenState();
+  ConsumerState<EpisodeDetailScreen> createState() =>
+      _EpisodeDetailScreenState();
 }
 
 class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
@@ -64,23 +66,32 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
 
   void _navigateToPodcastDetail() async {
     final podcastService = ref.read(podcastServiceProvider);
-    // Note: widget.episode.audioUrl is used to identify the feed if needed, 
-    // but we usually need the feedUrl. 
+    // Note: widget.episode.audioUrl is used to identify the feed if needed,
+    // but we usually need the feedUrl.
     // For now, we search by podcastTitle to find the best match or if we had feedUrl in Episode model.
     // In EchoPod, we might need to add feedUrl to Episode model for better accuracy.
     // As a fallback, we'll try to find it in subscriptions or search.
     final subs = await ref.read(subscriptionsProvider.future);
-    final existing = subs.where((p) => p.title == widget.episode.podcastTitle).firstOrNull;
-    
+    final existing =
+        subs.where((p) => p.title == widget.episode.podcastTitle).firstOrNull;
+
     if (existing != null) {
       if (mounted) {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => PodcastDetailScreen(podcast: existing)));
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => PodcastDetailScreen(podcast: existing)));
       }
     } else {
       // Search for the podcast to get its metadata/feedUrl
-      final results = await podcastService.searchPodcasts(widget.episode.podcastTitle);
+      final results =
+          await podcastService.searchPodcasts(widget.episode.podcastTitle);
       if (results.isNotEmpty && mounted) {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => PodcastDetailScreen(podcast: results.first)));
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    PodcastDetailScreen(podcast: results.first)));
       }
     }
   }
@@ -88,7 +99,8 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final audioHandler = ref.watch(audioHandlerProvider);
-    final isSubscribedAsync = ref.watch(subscriptionsProvider).whenData((subs) => subs.any((p) => p.title == widget.episode.podcastTitle));
+    final isSubscribedAsync = ref.watch(subscriptionsProvider).whenData(
+        (subs) => subs.any((p) => p.title == widget.episode.podcastTitle));
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -101,25 +113,38 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
         actions: [
           isSubscribedAsync.when(
             data: (isSubscribed) => TextButton.icon(
-              onPressed: isSubscribed ? null : () async {
-                final podcastService = ref.read(podcastServiceProvider);
-                final storageService = ref.read(storageServiceProvider);
-                final results = await podcastService.searchPodcasts(widget.episode.podcastTitle);
-                if (results.isNotEmpty) {
-                  await storageService.subscribe(results.first);
-                  ref.invalidate(subscriptionsProvider);
-                }
-              },
+              onPressed: isSubscribed
+                  ? null
+                  : () async {
+                      final podcastService = ref.read(podcastServiceProvider);
+                      final storageService = ref.read(storageServiceProvider);
+                      final results = await podcastService
+                          .searchPodcasts(widget.episode.podcastTitle);
+                      if (results.isNotEmpty) {
+                        await storageService.subscribe(results.first);
+                        ref.invalidate(subscriptionsProvider);
+                        ref.invalidate(
+                            isSubscribedProvider(results.first.feedUrl));
+                      }
+                    },
               icon: Icon(isSubscribed ? Icons.check : Icons.add, size: 18),
               label: Text(isSubscribed ? '已订阅' : '订阅'),
               style: TextButton.styleFrom(
-                backgroundColor: isSubscribed ? Colors.white10 : Colors.teal.withOpacity(0.1),
-                foregroundColor: isSubscribed ? Colors.white70 : Colors.tealAccent,
+                backgroundColor: isSubscribed
+                    ? Colors.white10
+                    : Colors.teal.withOpacity(0.1),
+                foregroundColor:
+                    isSubscribed ? Colors.white70 : Colors.tealAccent,
               ),
             ),
-            loading: () => const SizedBox(width: 40, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+            loading: () => const SizedBox(
+                width: 40,
+                child:
+                    Center(child: CircularProgressIndicator(strokeWidth: 2))),
             error: (_, __) => const SizedBox(),
           ),
+          const SizedBox(width: 8),
+          DownloadButton(episode: widget.episode, color: Colors.white),
           const SizedBox(width: 16),
         ],
       ),
@@ -153,11 +178,16 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                       GestureDetector(
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => PlayerScreen(episode: widget.episode)),
+                          MaterialPageRoute(
+                              builder: (context) =>
+                                  PlayerScreen(episode: widget.episode)),
                         ),
                         child: Text(
                           widget.episode.title,
-                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -165,7 +195,8 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                         onTap: _navigateToPodcastDetail,
                         child: Text(
                           '${widget.episode.podcastTitle} >',
-                          style: const TextStyle(color: Colors.tealAccent, fontSize: 14),
+                          style: const TextStyle(
+                              color: Colors.tealAccent, fontSize: 14),
                         ),
                       ),
                     ],
@@ -180,7 +211,7 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                       builder: (context, playbackSnapshot) {
                         final playing = playbackSnapshot.data?.playing ?? false;
                         final isBusy = isCurrent && playing;
-                        
+
                         return Stack(
                           alignment: Alignment.center,
                           children: [
@@ -189,20 +220,25 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                                 width: 54,
                                 height: 54,
                                 child: CircularProgressIndicator(
-                                  value: _calculateProgress(playbackSnapshot.data, snapshot.data),
+                                  value: _calculateProgress(
+                                      playbackSnapshot.data, snapshot.data),
                                   strokeWidth: 2,
                                   color: Colors.tealAccent,
                                 ),
                               ),
                             IconButton(
                               icon: Icon(
-                                isBusy ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                                isBusy
+                                    ? Icons.pause_circle_filled
+                                    : Icons.play_circle_filled,
                                 size: 48,
                                 color: Colors.white,
                               ),
                               onPressed: () {
                                 if (isCurrent) {
-                                  playing ? audioHandler.pause() : audioHandler.play();
+                                  playing
+                                      ? audioHandler.pause()
+                                      : audioHandler.play();
                                 } else {
                                   audioHandler.playEpisode(widget.episode);
                                 }
@@ -219,7 +255,8 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
             const SizedBox(height: 24),
             Row(
               children: [
-                const Icon(Icons.timer_outlined, size: 16, color: Colors.tealAccent),
+                const Icon(Icons.timer_outlined,
+                    size: 16, color: Colors.tealAccent),
                 const SizedBox(width: 4),
                 Text(
                   '${_formatDuration(widget.episode.duration)} · ${widget.episode.pubDate?.year}/${widget.episode.pubDate?.month}/${widget.episode.pubDate?.day}',
@@ -236,7 +273,8 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
                 ),
               ),
             ),
@@ -254,26 +292,35 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.white24),
                     ),
-                    child: Text(_aiSummary!, style: const TextStyle(color: Colors.white, height: 1.5)),
+                    child: Text(_aiSummary!,
+                        style:
+                            const TextStyle(color: Colors.white, height: 1.5)),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => AIAgentScreen(episode: widget.episode)),
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              AIAgentScreen(episode: widget.episode)),
                     ),
                     icon: const Icon(Icons.chat_bubble_outline, size: 18),
                     label: const Text('与 AI 助手深度交流'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.tealAccent,
                       side: const BorderSide(color: Colors.tealAccent),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20)),
                     ),
                   ),
                 ],
               ),
             const SizedBox(height: 24),
-            const Text('本期节目的主要内容有：', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+            const Text('本期节目的主要内容有：',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.white)),
             const SizedBox(height: 12),
             HtmlWidget(
               _processDescription(widget.episode.description),
@@ -296,7 +343,8 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                   'font-weight': 'normal',
                 };
               },
-              textStyle: const TextStyle(height: 1.8, color: Colors.white, fontSize: 15),
+              textStyle: const TextStyle(
+                  height: 1.8, color: Colors.white, fontSize: 15),
             ),
           ],
         ),
@@ -305,7 +353,10 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
   }
 
   double? _calculateProgress(PlaybackState? state, MediaItem? item) {
-    if (state == null || item == null || item.duration == null || item.duration == Duration.zero) {
+    if (state == null ||
+        item == null ||
+        item.duration == null ||
+        item.duration == Duration.zero) {
       return null;
     }
     return state.position.inMilliseconds / item.duration!.inMilliseconds;

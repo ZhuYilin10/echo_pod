@@ -21,7 +21,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   EchoPodAudioHandler(this._liveActivityService, this._storageService) {
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
     _player.setAudioSource(_playlist);
-    
+
     // Sync media item based on current index
     _player.currentIndexStream.listen((index) {
       if (index != null && index < queue.value.length) {
@@ -37,14 +37,70 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
     // Listen to playing state changes
     _player.playingStream.listen((playing) {
       _updateLiveActivity(_player.position);
-      if (playing && _currentEpisode != null) {
-        _storageService.addToHistory(_currentEpisode!);
-        _startSaveTimer();
-      } else {
-        _stopSaveTimer();
-        _saveCurrentPosition();
-      }
+      if (playing && _currentEpisode != null) {}
     });
+
+    _init();
+  }
+
+  Future<void> _init() async {
+    // Load history and populate queue
+    try {
+      final history = await _storageService.getPlayHistory();
+      if (history.isNotEmpty) {
+        final items = <MediaItem>[];
+        for (var episode in history) {
+          items.add(MediaItem(
+            id: episode.guid,
+            album: episode.podcastTitle,
+            title: episode.title,
+            artUri:
+                episode.imageUrl != null ? Uri.parse(episode.imageUrl!) : null,
+            duration: _parseDuration(episode.duration),
+            extras: episode.toJson(),
+          ));
+        }
+
+        // Check if queue was modified while we were loading
+        if (queue.value.isNotEmpty) {
+          print(
+              'AudioHandler: Queue modified during init. Aborting history restore.');
+          return;
+        }
+
+        // Update queue
+        queue.add(items);
+
+        // Add all to playlist audio source (lazily)
+        for (var item in items) {
+          await _playlist.add(await _buildAudioSource(item));
+        }
+
+        // Restore last played item (first in history) as current item
+        // But do not auto-play
+        if (items.isNotEmpty) {
+          mediaItem.add(items.first);
+          _currentEpisode = history.first;
+          // seek to saved position for the first item
+          final savedPosition =
+              await _storageService.getPosition(history.first.guid);
+          if (savedPosition > Duration.zero) {
+            // We use a small delay or just set initial position if possible.
+            // simplest is to just seek.
+            // Note: _player might not be ready, so we might need to await loading first source?
+            // Actually just setting mediaItem allows MiniPlayer to show it.
+            // We can let user press play to resume.
+            await _player.seek(savedPosition, index: 0);
+          }
+        }
+      }
+      // Always start the save timer on init if we have a current episode
+      if (_currentEpisode != null) {
+        _startSaveTimer();
+      }
+    } catch (e) {
+      print('AudioHandler: Error initializing history: $e');
+    }
   }
 
   void _startSaveTimer() {
@@ -60,8 +116,13 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> _saveCurrentPosition() async {
-    if (_currentEpisode != null) {
-      await _storageService.savePosition(_currentEpisode!.guid, _player.position);
+    try {
+      if (_currentEpisode != null) {
+        await _storageService.savePosition(
+            _currentEpisode!.guid, _player.position);
+      }
+    } catch (e) {
+      print('Error saving position: $e');
     }
   }
 
@@ -88,13 +149,17 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<AudioSource> _buildAudioSource(MediaItem item) async {
     final audioUrl = item.extras?['audioUrl'] as String? ?? item.id;
     final directory = await getApplicationDocumentsDirectory();
-    final fileName = audioUrl.split('/').last.split('?').first;
+    // Use hashcode to prevent filename collisions (e.g. index.m3u8)
+    final extension = audioUrl.split('/').last.split('?').first.split('.').last;
+    final fileName = '${audioUrl.hashCode}.$extension';
     final localFile = File('${directory.path}/downloads/$fileName');
-    
+
     if (localFile.existsSync()) {
       return AudioSource.file(localFile.path, tag: item);
     } else {
-      return LockCachingAudioSource(Uri.parse(audioUrl), tag: item);
+      // Use standard Uri source instead of LockCachingAudioSource to avoid potential
+      // file system/encoding errors on iOS (err=-12864) which cause skipping.
+      return AudioSource.uri(Uri.parse(audioUrl), tag: item);
     }
   }
 
@@ -136,7 +201,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
     var remaining = duration;
     _sleepTimerController.add(remaining);
-    
+
     _sleepTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       remaining -= const Duration(seconds: 1);
       if (remaining.inSeconds <= 0) {
@@ -150,56 +215,117 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> playEpisode(Episode episode, {bool autoPlay = true}) async {
-    if (episode.audioUrl == null) return;
-    
-    // Save current position before switching
-    await _saveCurrentPosition();
-    _currentEpisode = episode;
-
-    final item = MediaItem(
-      id: episode.guid, // Use guid as ID for consistency and Hero tags
-      album: episode.podcastTitle,
-      title: episode.title,
-      artUri: episode.imageUrl != null ? Uri.parse(episode.imageUrl!) : null,
-      duration: _parseDuration(episode.duration),
-      extras: episode.toJson(),
-    );
-
-    // Clear current queue and play this one immediately
-    await _playlist.clear();
-    queue.add([item]);
-    mediaItem.add(item); // Explicitly update mediaItem
-    await _playlist.add(await _buildAudioSource(item));
-    
-    // Restore saved position
-    final savedPosition = await _storageService.getPosition(episode.guid);
-    if (savedPosition > Duration.zero) {
-      await _player.seek(savedPosition);
+    print(
+        'AudioHandler: playEpisode called for ${episode.title}, url: ${episode.audioUrl}');
+    if (episode.audioUrl == null) {
+      print('AudioHandler: playEpisode aborted - audioUrl is null');
+      return;
     }
-    
-    if (autoPlay) {
-      play();
-      
-      // Start Live Activity only if playing
-      await _liveActivityService.startLiveActivity(
-        podcastTitle: episode.podcastTitle,
-        episodeTitle: episode.title,
-        imageUrl: episode.imageUrl ?? "",
-        progress: 0.0,
-        isPlaying: true,
+
+    try {
+      // Save current position before switching
+      await _saveCurrentPosition();
+      _currentEpisode = episode;
+
+      final item = MediaItem(
+        id: episode.guid, // Use guid as ID for consistency and Hero tags
+        album: episode.podcastTitle,
+        title: episode.title,
+        artUri: episode.imageUrl != null ? Uri.parse(episode.imageUrl!) : null,
+        duration: _parseDuration(episode.duration),
+        extras: episode.toJson(),
       );
-      _liveActivityActive = true;
+
+      // LIFO Logic:
+      // 1. Check if episode is already in queue
+      final currentQueue = queue.value;
+      final existingIndex =
+          currentQueue.indexWhere((i) => i.id == episode.guid);
+
+      print('AudioHandler: Queue length before: ${queue.value.length}');
+      print('AudioHandler: Playlist length before: ${_playlist.length}');
+
+      // Stop before modifying playlist to avoid index confusion
+      await _player.stop();
+
+      if (existingIndex == 0) {
+        print('AudioHandler: Episode already at top. Playing from 0.');
+        // Already at top, just play
+        await _player.seek(Duration.zero, index: 0);
+      } else {
+        if (existingIndex > 0) {
+          print(
+              'AudioHandler: Moving existing episode from index $existingIndex to top.');
+          // Move to top
+          await removeQueueItemAt(existingIndex);
+        } else {
+          print('AudioHandler: Inserting new episode at top.');
+        }
+
+        // Insert at top
+        // Note: insert(0) shifts current items down.
+        // Index 0 becomes the new item.
+        final source = await _buildAudioSource(item);
+        print('AudioHandler: Inserting source $source at index 0');
+        await _playlist.insert(0, source);
+        final newQueue = List<MediaItem>.from(queue.value)..insert(0, item);
+        queue.add(newQueue);
+
+        print('AudioHandler: Queue length after: ${queue.value.length}');
+        print('AudioHandler: Playlist length after: ${_playlist.length}');
+
+        // Play the new top item
+        print('AudioHandler: Seeking to index 0 (new item).');
+        await _player.seek(Duration.zero, index: 0);
+      }
+
+      // Explicitly update mediaItem to ensure UI reflects current item immediately
+      mediaItem.add(item);
+
+      // Persist to history immediately so if app restarts, this episode is top
+      await _storageService.addToHistory(episode);
+
+      // Restore saved position
+      final savedPosition = await _storageService.getPosition(episode.guid);
+      if (savedPosition > Duration.zero) {
+        await _player.seek(savedPosition);
+      }
+
+      if (autoPlay) {
+        print('AudioHandler: Starting playback...');
+        await play();
+
+        // Start Live Activity only if playing
+        await _liveActivityService.startLiveActivity(
+          podcastTitle: episode.podcastTitle,
+          episodeTitle: episode.title,
+          imageUrl: episode.imageUrl ?? "",
+          progress: 0.0,
+          isPlaying: true,
+        );
+        _liveActivityActive = true;
+
+        // Start saving position timer
+        _startSaveTimer();
+      }
+    } catch (e, stack) {
+      print('AudioHandler: Error in playEpisode: $e');
+      print(stack);
+      // Ensure we don't end up in a stuck state
+      if (mediaItem.value?.id == episode.guid) {
+        mediaItem.add(null);
+      }
     }
   }
 
   Future<void> _updateLiveActivity(Duration position) async {
     if (!_liveActivityActive || mediaItem.value == null) return;
-    
+
     final duration = mediaItem.value!.duration;
     if (duration == null || duration.inSeconds == 0) return;
-    
+
     final progress = position.inSeconds / duration.inSeconds;
-    
+
     await _liveActivityService.updateLiveActivity(
       progress: progress.clamp(0.0, 1.0),
       isPlaying: _player.playing,
@@ -208,10 +334,10 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
   Duration? _parseDuration(String? duration) {
     if (duration == null) return null;
-    
+
     int parsePart(String part) {
       if (part.contains('.')) {
-         return double.tryParse(part)?.toInt() ?? 0;
+        return double.tryParse(part)?.toInt() ?? 0;
       }
       return int.tryParse(part) ?? 0;
     }

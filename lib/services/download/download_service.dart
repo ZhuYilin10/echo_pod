@@ -1,10 +1,15 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 
 class DownloadService {
   final Dio _dio = Dio();
-  
+  final _progressController = StreamController<Map<String, double>>.broadcast();
+
+  Stream<Map<String, double>> get downloadProgressStream =>
+      _progressController.stream;
+
   Future<bool> isDownloaded(String audioUrl) async {
     final path = await _getLocalPath(audioUrl);
     final file = File(path);
@@ -17,10 +22,11 @@ class DownloadService {
     return '${directory.path}/downloads/$fileName';
   }
 
-  Future<void> downloadEpisode(String audioUrl, Function(double) onProgress) async {
+  Future<void> downloadEpisode(
+      String audioUrl, Function(double) onProgress) async {
     final savePath = await _getLocalPath(audioUrl);
     final file = File(savePath);
-    
+
     if (!file.parent.existsSync()) {
       file.parent.createSync(recursive: true);
     }
@@ -31,11 +37,15 @@ class DownloadService {
         savePath,
         onReceiveProgress: (received, total) {
           if (total != -1) {
-            onProgress(received / total);
+            final progress = received / total;
+            onProgress(progress);
+            _progressController.add({audioUrl: progress});
           }
         },
       );
+      _progressController.add({audioUrl: 1.0}); // Ensure 100% is sent
     } catch (_) {
+      _progressController.add({audioUrl: -1.0}); // Error state
       rethrow;
     }
   }

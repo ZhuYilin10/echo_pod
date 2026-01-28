@@ -10,6 +10,7 @@ import 'playlist_screen.dart';
 import '../share/share_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
+import '../common/download_button.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -25,16 +26,25 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   void _navigateToPodcastDetail() async {
     final podcastService = ref.read(podcastServiceProvider);
     final subs = await ref.read(subscriptionsProvider.future);
-    final existing = subs.where((p) => p.title == widget.episode.podcastTitle).firstOrNull;
-    
+    final existing =
+        subs.where((p) => p.title == widget.episode.podcastTitle).firstOrNull;
+
     if (existing != null) {
       if (mounted) {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => PodcastDetailScreen(podcast: existing)));
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => PodcastDetailScreen(podcast: existing)));
       }
     } else {
-      final results = await podcastService.searchPodcasts(widget.episode.podcastTitle);
+      final results =
+          await podcastService.searchPodcasts(widget.episode.podcastTitle);
       if (results.isNotEmpty && mounted) {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => PodcastDetailScreen(podcast: results.first)));
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    PodcastDetailScreen(podcast: results.first)));
       }
     }
   }
@@ -42,7 +52,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   @override
   Widget build(BuildContext context) {
     final audioHandler = ref.watch(audioHandlerProvider);
-    final isSubscribedAsync = ref.watch(subscriptionsProvider).whenData((subs) => subs.any((p) => p.title == widget.episode.podcastTitle));
+    final isSubscribedAsync = ref.watch(subscriptionsProvider).whenData(
+        (subs) => subs.any((p) => p.title == widget.episode.podcastTitle));
 
     return Scaffold(
       backgroundColor: const Color(0xFF001F1F),
@@ -58,14 +69,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             icon: const Icon(Icons.info_outline, color: Colors.white),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => EpisodeDetailScreen(episode: widget.episode)),
+              MaterialPageRoute(
+                  builder: (context) =>
+                      EpisodeDetailScreen(episode: widget.episode)),
             ),
           ),
           IconButton(
             icon: const Icon(Icons.share_rounded, color: Colors.white),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => ShareScreen(episode: widget.episode)),
+              MaterialPageRoute(
+                  builder: (context) => ShareScreen(episode: widget.episode)),
             ),
           ),
         ],
@@ -79,7 +93,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             Hero(
               tag: 'episode_artwork_${widget.episode.guid}',
               child: Container(
-                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
+                constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
@@ -110,7 +125,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+              style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
             ),
             const SizedBox(height: 8),
             Row(
@@ -122,40 +140,58 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     child: Text(
                       widget.episode.podcastTitle,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.tealAccent, fontSize: 14),
+                      style: const TextStyle(
+                          color: Colors.tealAccent, fontSize: 14),
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 isSubscribedAsync.when(
                   data: (isSubscribed) => GestureDetector(
-                    onTap: isSubscribed ? null : () async {
-                      final podcastService = ref.read(podcastServiceProvider);
-                      final storageService = ref.read(storageServiceProvider);
-                      final results = await podcastService.searchPodcasts(widget.episode.podcastTitle);
-                      if (results.isNotEmpty) {
-                        await storageService.subscribe(results.first);
-                        ref.invalidate(subscriptionsProvider);
-                      }
-                    },
+                    onTap: isSubscribed
+                        ? null
+                        : () async {
+                            final podcastService =
+                                ref.read(podcastServiceProvider);
+                            final storageService =
+                                ref.read(storageServiceProvider);
+                            final results = await podcastService
+                                .searchPodcasts(widget.episode.podcastTitle);
+                            if (results.isNotEmpty) {
+                              await storageService.subscribe(results.first);
+                              ref.invalidate(subscriptionsProvider);
+                              ref.invalidate(
+                                  isSubscribedProvider(results.first.feedUrl));
+                            }
+                          },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: isSubscribed ? Colors.white10 : Colors.tealAccent.withOpacity(0.2),
+                        color: isSubscribed
+                            ? Colors.white10
+                            : Colors.tealAccent.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: isSubscribed ? Colors.white24 : Colors.tealAccent),
+                        border: Border.all(
+                            color: isSubscribed
+                                ? Colors.white24
+                                : Colors.tealAccent),
                       ),
                       child: Text(
                         isSubscribed ? '已订阅' : '+ 订阅',
                         style: TextStyle(
-                          color: isSubscribed ? Colors.white54 : Colors.tealAccent,
+                          color:
+                              isSubscribed ? Colors.white54 : Colors.tealAccent,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ),
-                  loading: () => const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  loading: () => const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
                   error: (_, __) => const SizedBox(),
                 ),
               ],
@@ -179,7 +215,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         },
                         child: Text(
                           '${speed}x',
-                          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.bold),
                         ),
                       );
                     },
@@ -195,16 +233,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           children: [
                             Icon(
                               Icons.timer_outlined,
-                              color: remaining != null ? Colors.tealAccent : Colors.white70,
+                              color: remaining != null
+                                  ? Colors.tealAccent
+                                  : Colors.white70,
                             ),
                             if (remaining != null)
                               Text(
                                 '${remaining.inMinutes}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')}',
-                                style: const TextStyle(color: Colors.tealAccent, fontSize: 10),
+                                style: const TextStyle(
+                                    color: Colors.tealAccent, fontSize: 10),
                               ),
                           ],
                         ),
-                        onPressed: () => _showSleepTimerDialog(context, audioHandler),
+                        onPressed: () =>
+                            _showSleepTimerDialog(context, audioHandler),
                       );
                     },
                   ),
@@ -212,7 +254,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   IconButton(
                     icon: Icon(
                       Icons.volume_off_outlined,
-                      color: _isSkipSilenceEnabled ? Colors.tealAccent : Colors.white70,
+                      color: _isSkipSilenceEnabled
+                          ? Colors.tealAccent
+                          : Colors.white70,
                     ),
                     onPressed: () {
                       setState(() {
@@ -221,6 +265,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       audioHandler.setSkipSilence(_isSkipSilenceEnabled);
                     },
                   ),
+                  // Download Button
+                  DownloadButton(
+                      episode: widget.episode, color: Colors.white70),
                 ],
               ),
             ),
@@ -230,14 +277,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               stream: _positionDataStream(audioHandler),
               builder: (context, snapshot) {
                 final state = snapshot.data;
+                final currentId = audioHandler.mediaItem.value?.id;
+                final isCurrent = currentId == widget.episode.guid;
+                final displayState = isCurrent ? state : null;
+
                 return ProgressBar(
-                  progress: state?.position ?? Duration.zero,
-                  total: state?.duration ?? Duration.zero,
-                  buffered: state?.bufferedPosition ?? Duration.zero,
-                  onSeek: audioHandler.seek,
+                  progress: displayState?.position ?? Duration.zero,
+                  total: displayState?.duration ?? Duration.zero,
+                  buffered: displayState?.bufferedPosition ?? Duration.zero,
+                  onSeek: (position) {
+                    if (isCurrent) {
+                      audioHandler.seek(position);
+                    }
+                  },
                   progressBarColor: Colors.white,
                   baseBarColor: Colors.white.withOpacity(0.2),
-                  thumbColor: Colors.white,
+                  thumbColor: isCurrent ? Colors.white : Colors.white24,
                   barHeight: 4,
                   thumbRadius: 6,
                   timeLabelTextStyle: const TextStyle(color: Colors.white70),
@@ -254,19 +309,43 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.replay_10, size: 36, color: Colors.white),
-                      onPressed: () => audioHandler.seek(audioHandler.playbackState.value.updatePosition - const Duration(seconds: 15)),
+                      icon: const Icon(Icons.replay_10,
+                          size: 36, color: Colors.white),
+                      onPressed: () => audioHandler.seek(
+                          audioHandler.playbackState.value.updatePosition -
+                              const Duration(seconds: 15)),
                     ),
                     const SizedBox(width: 24),
                     IconButton(
                       iconSize: 72,
-                      icon: Icon(playing ? Icons.pause_circle_filled : Icons.play_circle_filled, color: Colors.white),
-                      onPressed: playing ? audioHandler.pause : audioHandler.play,
+                      icon: Builder(
+                        builder: (context) {
+                          final currentId = audioHandler.mediaItem.value?.id;
+                          final isCurrent = currentId == widget.episode.guid;
+                          return Icon(
+                              (isCurrent && playing)
+                                  ? Icons.pause_circle_filled
+                                  : Icons.play_circle_filled,
+                              color: Colors.white);
+                        },
+                      ),
+                      onPressed: () {
+                        final currentId = audioHandler.mediaItem.value?.id;
+                        final isCurrent = currentId == widget.episode.guid;
+                        if (isCurrent) {
+                          playing ? audioHandler.pause() : audioHandler.play();
+                        } else {
+                          audioHandler.playEpisode(widget.episode);
+                        }
+                      },
                     ),
                     const SizedBox(width: 24),
                     IconButton(
-                      icon: const Icon(Icons.forward_30, size: 36, color: Colors.white),
-                      onPressed: () => audioHandler.seek(audioHandler.playbackState.value.updatePosition + const Duration(seconds: 30)),
+                      icon: const Icon(Icons.forward_30,
+                          size: 36, color: Colors.white),
+                      onPressed: () => audioHandler.seek(
+                          audioHandler.playbackState.value.updatePosition +
+                              const Duration(seconds: 30)),
                     ),
                   ],
                 );
@@ -278,7 +357,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PlaylistScreen())),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const PlaylistScreen())),
                   child: const Row(
                     children: [
                       Icon(Icons.playlist_play, color: Colors.white54),
@@ -316,11 +398,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     });
   }
 
-  void _showSleepTimerDialog(BuildContext context, EchoPodAudioHandler audioHandler) {
+  void _showSleepTimerDialog(
+      BuildContext context, EchoPodAudioHandler audioHandler) {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1A1A1A),
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
         return SafeArea(
           child: Column(
@@ -328,7 +412,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             children: [
               const Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text('定时关闭', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text('定时关闭',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
               ),
               ListTile(
                 title: const Text('关闭', style: TextStyle(color: Colors.white)),
@@ -338,12 +426,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 },
               ),
               ...[15, 30, 45, 60].map((mins) => ListTile(
-                title: Text('$mins 分钟后', style: const TextStyle(color: Colors.white)),
-                onTap: () {
-                  audioHandler.setSleepTimer(Duration(minutes: mins));
-                  Navigator.pop(context);
-                },
-              )),
+                    title: Text('$mins 分钟后',
+                        style: const TextStyle(color: Colors.white)),
+                    onTap: () {
+                      audioHandler.setSleepTimer(Duration(minutes: mins));
+                      Navigator.pop(context);
+                    },
+                  )),
               const SizedBox(height: 20),
             ],
           ),
