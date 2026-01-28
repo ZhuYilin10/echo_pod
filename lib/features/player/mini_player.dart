@@ -69,6 +69,7 @@ class MiniPlayer extends ConsumerWidget {
                           podcastTitle: mediaItem.album ?? '',
                           imageUrl: mediaItem.artUri?.toString(),
                           audioUrl: mediaItem.id,
+                          podcastFeedUrl: '',
                         );
                   Navigator.push(
                     context,

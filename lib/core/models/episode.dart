@@ -7,6 +7,7 @@ class Episode {
   final String? duration;
   final String? imageUrl;
   final String podcastTitle;
+  final String podcastFeedUrl;
 
   Episode({
     required this.guid,
@@ -17,6 +18,7 @@ class Episode {
     this.duration,
     this.imageUrl,
     required this.podcastTitle,
+    required this.podcastFeedUrl,
   });
 
   Map<String, dynamic> toJson() => {
@@ -28,6 +30,7 @@ class Episode {
     'duration': duration,
     'imageUrl': imageUrl,
     'podcastTitle': podcastTitle,
+    'podcastFeedUrl': podcastFeedUrl,
   };
 
   factory Episode.fromJson(Map<String, dynamic> json) => Episode(
@@ -39,5 +42,6 @@ class Episode {
     duration: json['duration'],
     imageUrl: json['imageUrl'],
     podcastTitle: json['podcastTitle'],
+    podcastFeedUrl: json['podcastFeedUrl'] ?? '',
   );
 }

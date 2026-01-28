@@ -58,6 +58,7 @@ class PodcastService {
           duration: item.itunes?.duration?.toString(),
           imageUrl: item.itunes?.image?.href ?? feed.image?.url,
           podcastTitle: feed.title ?? '',
+          podcastFeedUrl: feedUrl,
         );
       }).toList() ?? [];
     } catch (_) {

@@ -10,6 +10,32 @@ class StorageService {
   static const String _positionKey = 'playback_positions';
   static const String _timeSavedKey = 'total_time_saved';
   static const String _skipSilenceKey = 'skip_silence_enabled';
+  static const String _podcastSpeedsKey = 'podcast_speeds';
+
+  Future<void> savePodcastSpeed(String feedUrl, double speed) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_podcastSpeedsKey);
+    Map<String, double> speeds = {};
+    if (raw != null) {
+      try {
+        speeds = Map<String, double>.from(jsonDecode(raw));
+      } catch (_) {}
+    }
+    speeds[feedUrl] = speed;
+    await prefs.setString(_podcastSpeedsKey, jsonEncode(speeds));
+  }
+
+  Future<double?> getPodcastSpeed(String feedUrl) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_podcastSpeedsKey);
+    if (raw == null) return null;
+    try {
+      final Map<String, dynamic> speeds = jsonDecode(raw);
+      return speeds[feedUrl]?.toDouble();
+    } catch (_) {
+      return null;
+    }
+  }
 
   Future<void> subscribe(Podcast podcast) async {
     final prefs = await SharedPreferences.getInstance();

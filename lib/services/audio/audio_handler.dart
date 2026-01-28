@@ -26,14 +26,21 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
     _player.setAudioSource(_playlist);
 
-    // Sync media item based on current index
-    _player.currentIndexStream.listen((index) {
+    _player.currentIndexStream.listen((index) async {
       if (index != null && index < queue.value.length) {
         final item = queue.value[index];
         mediaItem.add(item);
         if (item.extras != null) {
-          _currentEpisode = Episode.fromJson(item.extras!);
+          final episode = Episode.fromJson(item.extras!);
+          _currentEpisode = episode;
           _startSaveTimer();
+
+          // Apply podcast-specific speed if exists
+          final savedSpeed =
+              await _storageService.getPodcastSpeed(episode.podcastFeedUrl);
+          if (savedSpeed != null) {
+            await setSpeed(savedSpeed);
+          }
         }
       }
     });

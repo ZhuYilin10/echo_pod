@@ -207,10 +207,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     builder: (context, snapshot) {
                       final speed = snapshot.data?.speed ?? 1.0;
                       return TextButton(
-                        onPressed: () {
-                          final nextSpeed = speed >= 2.0 ? 0.5 : speed + 0.5;
-                          audioHandler.setSpeed(nextSpeed);
-                        },
+                        onPressed: () => _showSpeedDialog(context, audioHandler),
                         child: Text(
                           '${speed}x',
                           style: const TextStyle(
@@ -422,6 +419,96 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       return '${duration.inMinutes}分${duration.inSeconds % 60}秒';
     }
     return '${duration.inSeconds}秒';
+  }
+
+  void _showSpeedDialog(
+      BuildContext context, EchoPodAudioHandler audioHandler) {
+    double currentSpeed = audioHandler.playbackState.value.speed;
+    bool overrideChannel = false;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setModalState) {
+          return SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Text('播放倍速',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
+                ),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.center,
+                  children: [0.5, 0.8, 1.0, 1.2, 1.5, 1.8, 2.0, 2.5, 3.0]
+                      .map((s) => ChoiceChip(
+                            label: Text('${s}x'),
+                            selected: currentSpeed == s,
+                            onSelected: (selected) {
+                              if (selected) {
+                                setModalState(() => currentSpeed = s);
+                                audioHandler.setSpeed(s);
+                              }
+                            },
+                            backgroundColor: Colors.white10,
+                            selectedColor: Colors.tealAccent,
+                            labelStyle: TextStyle(
+                                color: currentSpeed == s
+                                    ? Colors.black
+                                    : Colors.white),
+                          ))
+                      .toList(),
+                ),
+                const SizedBox(height: 24),
+                SwitchListTile(
+                  title: const Text('应用于该频道',
+                      style: TextStyle(color: Colors.white, fontSize: 14)),
+                  subtitle: const Text('以后该频道的所有节目都按此倍速播放',
+                      style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  value: overrideChannel,
+                  activeColor: Colors.tealAccent,
+                  onChanged: (val) {
+                    setModalState(() => overrideChannel = val);
+                    if (val) {
+                      ref
+                          .read(storageServiceProvider)
+                          .savePodcastSpeed(widget.episode.podcastFeedUrl, currentSpeed);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.tealAccent,
+                        foregroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('确定'),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          );
+        });
+      },
+    );
   }
 
   void _showSleepTimerDialog(

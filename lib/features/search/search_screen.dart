@@ -167,6 +167,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                 title: result.episodeTitle,
                 podcastTitle: result.podcastTitle,
                 description: result.snippet,
+                podcastFeedUrl: '',
                 // audioUrl: needs actual url, for now mock or add to SearchResult
               );
               ref
