@@ -309,6 +309,26 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
+                        icon: const Icon(Icons.playlist_add_rounded, size: 24),
+                        onPressed: () {
+                          final handler = ref.read(audioHandlerProvider);
+                          handler.addQueueItem(MediaItem(
+                            id: episode.guid,
+                            album: episode.podcastTitle,
+                            title: episode.title,
+                            artUri: episode.imageUrl != null
+                                ? Uri.parse(episode.imageUrl!)
+                                : null,
+                            extras: episode.toJson(),
+                          ));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('已加入播放列表'),
+                                duration: Duration(seconds: 1)),
+                          );
+                        },
+                      ),
+                      IconButton(
                         icon: Icon(
                           isPlayingThis
                               ? Icons.pause_circle_outline

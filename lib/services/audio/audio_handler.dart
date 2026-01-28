@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:rxdart/rxdart.dart';
 import '../../core/models/episode.dart';
 import '../platform/live_activity_service.dart';
 import '../storage/storage_service.dart';
@@ -19,7 +20,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   final _sleepTimerController = StreamController<Duration?>.broadcast();
   bool _isSkipSilenceEnabled = false;
   Duration _totalSavedTime = Duration.zero;
-  final _timeSavedController = StreamController<Duration>.broadcast();
+  final _timeSavedController = BehaviorSubject<Duration>.seeded(Duration.zero);
 
   EchoPodAudioHandler(this._liveActivityService, this._storageService) {
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);

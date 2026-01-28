@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:audio_service/audio_service.dart';
 import '../../core/providers/providers.dart';
 import '../../core/models/episode.dart';
 import '../../core/models/podcast.dart';
@@ -180,6 +181,8 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildEpisodeItem(BuildContext context, WidgetRef ref, Episode episode) {
+    final audioHandler = ref.watch(audioHandlerProvider);
+
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: Hero(
@@ -195,17 +198,76 @@ class HomeScreen extends ConsumerWidget {
               width: 48,
               height: 48,
               color: Colors.grey[800],
-              child: const Icon(Icons.music_note_rounded, size: 24, color: Colors.white24),
+              child: const Icon(Icons.music_note_rounded,
+                  size: 24, color: Colors.white24),
             ),
           ),
         ),
       ),
-      title: Text(episode.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-      subtitle: Text('${episode.podcastTitle} · ${episode.pubDate?.month}月${episode.pubDate?.day}日', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      title: Text(episode.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      subtitle: Text(
+          '${episode.podcastTitle} · ${episode.pubDate?.month}月${episode.pubDate?.day}日',
+          style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      trailing: StreamBuilder<MediaItem?>(
+        stream: audioHandler.mediaItem,
+        builder: (context, snapshot) {
+          final isCurrent = snapshot.data?.id == episode.guid;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Add to Queue
+              IconButton(
+                icon: const Icon(Icons.playlist_add_rounded, size: 24),
+                onPressed: () {
+                  audioHandler.addQueueItem(MediaItem(
+                    id: episode.guid,
+                    album: episode.podcastTitle,
+                    title: episode.title,
+                    artUri: episode.imageUrl != null
+                        ? Uri.parse(episode.imageUrl!)
+                        : null,
+                    extras: episode.toJson(),
+                  ));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('已加入播放列表'), duration: Duration(seconds: 1)),
+                  );
+                },
+              ),
+              // Play/Pause
+              StreamBuilder<PlaybackState>(
+                stream: audioHandler.playbackState,
+                builder: (context, pbSnapshot) {
+                  final playing = pbSnapshot.data?.playing ?? false;
+                  return IconButton(
+                    icon: Icon(
+                      (isCurrent && playing)
+                          ? Icons.pause_circle_outline_rounded
+                          : Icons.play_circle_outline_rounded,
+                      size: 28,
+                      color: Colors.deepPurpleAccent,
+                    ),
+                    onPressed: () {
+                      if (isCurrent) {
+                        playing ? audioHandler.pause() : audioHandler.play();
+                      } else {
+                        audioHandler.playEpisode(episode);
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          );
+        },
+      ),
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => EpisodeDetailScreen(episode: episode)),
+          MaterialPageRoute(
+              builder: (context) => EpisodeDetailScreen(episode: episode)),
         );
       },
     );
