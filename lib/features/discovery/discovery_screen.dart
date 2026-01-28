@@ -88,6 +88,68 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     }
   }
 
+  void _showWebAudioDialog(BuildContext context) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('万物皆可播 (实验室)',
+            style: TextStyle(color: Colors.tealAccent, fontSize: 18)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('支持粘贴 Bilibili/YouTube 等网页链接，直接作为音频收听',
+                style: TextStyle(color: Colors.white70, fontSize: 12)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: '粘贴视频网页链接...',
+                hintStyle: TextStyle(color: Colors.white24),
+                enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white24)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消', style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+            onPressed: () {
+              final url = controller.text.trim();
+              if (url.isEmpty) return;
+              Navigator.pop(context);
+              _handleWebUrl(url);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.tealAccent),
+            child: const Text('开始收听', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleWebUrl(String url) {
+    // For now, create a mock episode and play via our web infrastructure
+    final episode = Episode(
+      guid: 'web_${url.hashCode}',
+      title: '网页音频解析中...',
+      podcastTitle: '万物皆可播',
+      audioUrl: url, // Store URL in audioUrl for the web player to catch
+      podcastFeedUrl: 'web_pseudo_feed',
+    );
+
+    ref.read(audioHandlerProvider).playEpisode(episode);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('正在通过隐形助手加载网页音频...')),
+    );
+  }
+
   Future<void> _loadMore() async {
     if (_isLoadingMore || _displayedData.length >= _allData.length) return;
 
@@ -118,6 +180,11 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         title: const Text('发现宝藏'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome_rounded, color: Colors.tealAccent),
+            tooltip: '万物皆可播 (实验室)',
+            onPressed: () => _showWebAudioDialog(context),
+          ),
           IconButton(
             icon: const Icon(Icons.search_rounded),
             onPressed: () => Navigator.push(context,
