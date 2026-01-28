@@ -171,9 +171,25 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> addQueueItem(MediaItem mediaItem) async {
+    // LIFO logic for joining queue:
+    // New additions should be #2 in line (index 1), immediately after current playing (#1).
+    final currentQueue = queue.value;
+    final existingIndex =
+        currentQueue.indexWhere((item) => item.id == mediaItem.id);
+
+    if (existingIndex != -1) {
+      if (existingIndex == 0) return; // Already at top/playing
+      await removeQueueItemAt(existingIndex);
+    }
+
+    // Insert at index 1 (right after currently playing)
+    // If queue is empty, insert at 0
+    final insertIndex = currentQueue.isEmpty ? 0 : 1;
+
     final source = await _buildAudioSource(mediaItem);
-    await _playlist.add(source);
-    final newQueue = List<MediaItem>.from(queue.value)..add(mediaItem);
+    await _playlist.insert(insertIndex, source);
+    final newQueue = List<MediaItem>.from(queue.value)
+      ..insert(insertIndex, mediaItem);
     queue.add(newQueue);
   }
 
