@@ -29,7 +29,19 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
     // Sync media item based on current index
     _player.currentIndexStream.listen((index) {
       if (index != null && index < queue.value.length) {
-        mediaItem.add(queue.value[index]);
+        final item = queue.value[index];
+        mediaItem.add(item);
+        if (item.extras != null) {
+          _currentEpisode = Episode.fromJson(item.extras!);
+          _startSaveTimer();
+        }
+      }
+    });
+
+    // Handle episode completion
+    _player.playerStateStream.listen((state) {
+      if (state.processingState == ProcessingState.completed) {
+        _handleEpisodeCompleted();
       }
     });
 
@@ -281,21 +293,32 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
     });
   }
 
-  Future<void> playEpisode(Episode episode, {bool autoPlay = true}) async {
-    print(
-        'AudioHandler: playEpisode called for ${episode.title}, url: ${episode.audioUrl}');
-    if (episode.audioUrl == null) {
-      print('AudioHandler: playEpisode aborted - audioUrl is null');
-      return;
+  void _handleEpisodeCompleted() async {
+    if (queue.value.isNotEmpty) {
+      // Current playing is at index 0. Remove it.
+      await removeQueueItemAt(0);
+
+      // If there's more in the queue, start the new index 0
+      if (queue.value.isNotEmpty) {
+        await _player.seek(Duration.zero, index: 0);
+        await play();
+      } else {
+        _currentEpisode = null;
+        mediaItem.add(null);
+        _stopSaveTimer();
+      }
     }
+  }
+
+  Future<void> playEpisode(Episode episode, {bool autoPlay = true}) async {
+    if (episode.audioUrl == null) return;
 
     try {
-      // Save current position before switching
+      // Save current position of the episode we're about to leave
       await _saveCurrentPosition();
-      _currentEpisode = episode;
 
       final item = MediaItem(
-        id: episode.guid, // Use guid as ID for consistency and Hero tags
+        id: episode.guid,
         album: episode.podcastTitle,
         title: episode.title,
         artUri: episode.imageUrl != null ? Uri.parse(episode.imageUrl!) : null,
@@ -303,85 +326,43 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
         extras: episode.toJson(),
       );
 
-      // LIFO Logic:
-      // 1. Check if episode is already in queue
       final currentQueue = queue.value;
-      final existingIndex =
-          currentQueue.indexWhere((i) => i.id == episode.guid);
-
-      print('AudioHandler: Queue length before: ${queue.value.length}');
-      print('AudioHandler: Playlist length before: ${_playlist.length}');
-
-      // Stop before modifying playlist to avoid index confusion
-      await _player.stop();
+      final existingIndex = currentQueue.indexWhere((i) => i.id == episode.guid);
 
       if (existingIndex == 0) {
-        print('AudioHandler: Episode already at top. Playing from 0.');
-        // Already at top, just play
-        await _player.seek(Duration.zero, index: 0);
+        // Already playing this one, just ensure it's playing
+        if (autoPlay) await play();
       } else {
         if (existingIndex > 0) {
-          print(
-              'AudioHandler: Moving existing episode from index $existingIndex to top.');
-          // Move to top
+          // Exists elsewhere, move it to top
           await removeQueueItemAt(existingIndex);
-        } else {
-          print('AudioHandler: Inserting new episode at top.');
         }
 
-        // Insert at top
-        // Note: insert(0) shifts current items down.
-        // Index 0 becomes the new item.
+        // Insert at index 0. This pushes the current playing (if any) to index 1.
         final source = await _buildAudioSource(item);
-        print('AudioHandler: Inserting source $source at index 0');
         await _playlist.insert(0, source);
         final newQueue = List<MediaItem>.from(queue.value)..insert(0, item);
         queue.add(newQueue);
 
-        print('AudioHandler: Queue length after: ${queue.value.length}');
-        print('AudioHandler: Playlist length after: ${_playlist.length}');
-
-        // Play the new top item
-        print('AudioHandler: Seeking to index 0 (new item).');
+        // Switch playback to the new index 0
         await _player.seek(Duration.zero, index: 0);
-      }
+        
+        _currentEpisode = episode;
+        mediaItem.add(item);
+        
+        // Restore position for this episode
+        final savedPosition = await _storageService.getPosition(episode.guid);
+        if (savedPosition > Duration.zero) {
+          await _player.seek(savedPosition);
+        }
 
-      // Explicitly update mediaItem to ensure UI reflects current item immediately
-      mediaItem.add(item);
-
-      // Persist to history immediately so if app restarts, this episode is top
-      await _storageService.addToHistory(episode);
-
-      // Restore saved position
-      final savedPosition = await _storageService.getPosition(episode.guid);
-      if (savedPosition > Duration.zero) {
-        await _player.seek(savedPosition);
-      }
-
-      if (autoPlay) {
-        print('AudioHandler: Starting playback...');
-        await play();
-
-        // Start Live Activity only if playing
-        await _liveActivityService.startLiveActivity(
-          podcastTitle: episode.podcastTitle,
-          episodeTitle: episode.title,
-          imageUrl: episode.imageUrl ?? "",
-          progress: 0.0,
-          isPlaying: true,
-        );
-        _liveActivityActive = true;
-
-        // Start saving position timer
+        if (autoPlay) await play();
+        
+        await _storageService.addToHistory(episode);
         _startSaveTimer();
       }
-    } catch (e, stack) {
-      print('AudioHandler: Error in playEpisode: $e');
-      print(stack);
-      // Ensure we don't end up in a stuck state
-      if (mediaItem.value?.id == episode.guid) {
-        mediaItem.add(null);
-      }
+    } catch (e) {
+      print('Error playing episode: $e');
     }
   }
 
