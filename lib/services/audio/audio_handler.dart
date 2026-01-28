@@ -328,7 +328,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> playEpisode(Episode episode, {bool autoPlay = true}) async {
-    if (episode.audioUrl == null) return;
+    if (episode.audioUrl == null || episode.audioUrl!.isEmpty) return;
 
     try {
       // Save current position of the episode we're about to leave

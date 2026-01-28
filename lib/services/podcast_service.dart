@@ -83,30 +83,78 @@ class PodcastService {
     }
   }
 
+  Future<Episode?> resolveEpisodeUrl(Episode episode) async {
+    if (episode.audioUrl != null && episode.audioUrl!.isNotEmpty) return episode;
+    
+    // Search for the podcast to get the feed URL
+    final podcasts = await searchPodcasts(episode.podcastTitle);
+    if (podcasts.isNotEmpty) {
+      final feedUrl = podcasts.first.feedUrl;
+      final episodes = await fetchEpisodes(feedUrl);
+      // Try to find the matching episode by title
+      final match = episodes.where((e) => e.title == episode.title).firstOrNull;
+      if (match != null) return match;
+    }
+    return null;
+  }
+
   Future<List<Episode>> fetchTrendingEpisodes() async {
     try {
-      // Step 1: Get top podcasts in CN (from iTunes RSS)
-      final response = await _dio.get(
-        'https://itunes.apple.com/cn/rss/toppodcasts/limit=10/json'
+      // 1. Fetch iTunes Top Podcasts (CN)
+      final itunesResponse = await _dio.get(
+        'https://itunes.apple.com/cn/rss/toppodcasts/limit=50/json'
       );
-      final dynamic data = response.data is String ? jsonDecode(response.data) : response.data;
-      final entries = data['feed']['entry'] as List;
-      
-      final List<Episode> trendingEpisodes = [];
-      
-      // Step 2: For each top podcast, fetch their latest episode
-      for (final entry in entries) {
+      final dynamic itunesData = itunesResponse.data is String ? jsonDecode(itunesResponse.data) : itunesResponse.data;
+      final itunesEntries = itunesData['feed']['entry'] as List;
+
+      // 2. Fetch XYZRank Top Episodes
+      final xyzResponse = await _dio.get('https://xyzrank.com/api/episodes');
+      final dynamic xyzData = xyzResponse.data is String ? jsonDecode(xyzResponse.data) : xyzResponse.data;
+      final xyzItems = xyzData['items'] as List;
+
+      final Map<String, Episode> mergedMap = {};
+      final Map<String, double> scores = {};
+
+      // Process XYZRank (Priority 1.5x)
+      for (int i = 0; i < xyzItems.length && i < 50; i++) {
+        final item = xyzItems[i];
+        final episode = Episode(
+          guid: item['link'] ?? '',
+          title: item['title'] ?? '',
+          podcastTitle: item['podcastName'] ?? '',
+          imageUrl: item['logoURL'],
+          podcastFeedUrl: '', // Will need to resolve if played
+        );
+        mergedMap[episode.title] = episode;
+        scores[episode.title] = (50 - i) * 1.5;
+      }
+
+      // Process iTunes (Priority 1.0x)
+      for (int i = 0; i < itunesEntries.length; i++) {
+        final entry = itunesEntries[i];
         final String? feedUrl = entry['link']['attributes']['href'];
-        if (feedUrl != null) {
+        
+        if (i < 10 && feedUrl != null) {
           final episodes = await fetchEpisodes(feedUrl);
           if (episodes.isNotEmpty) {
-            trendingEpisodes.add(episodes.first);
+            final ep = episodes.first;
+            if (mergedMap.containsKey(ep.title)) {
+              scores[ep.title] = (scores[ep.title] ?? 0) + (50 - i);
+            } else {
+              mergedMap[ep.title] = ep;
+              scores[ep.title] = (50 - i).toDouble();
+            }
           }
         }
       }
-      return trendingEpisodes;
+
+      // Sort by score
+      final sortedTitles = scores.keys.toList()
+        ..sort((a, b) => scores[b]!.compareTo(scores[a]!));
+
+      return sortedTitles.take(50).map((t) => mergedMap[t]!).toList();
     } catch (e) {
-      print('Error fetching trending episodes: $e');
+      print('Error fetching weighted trending episodes: $e');
       return [];
     }
   }

@@ -227,15 +227,34 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.playlist_add_rounded, size: 24),
-                onPressed: () {
+                onPressed: () async {
+                  var epToAdd = episode;
+                  if (epToAdd.audioUrl == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('正在解析音频地址...'), duration: Duration(seconds: 1)),
+                    );
+                    final resolved = await ref.read(podcastServiceProvider).resolveEpisodeUrl(episode);
+                    if (resolved != null) {
+                      epToAdd = resolved;
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('无法解析音频地址')),
+                        );
+                      }
+                      return;
+                    }
+                  }
                   audioHandler.addQueueItem(MediaItem(
-                    id: episode.guid,
-                    album: episode.podcastTitle,
-                    title: episode.title,
-                    artUri: episode.imageUrl != null ? Uri.parse(episode.imageUrl!) : null,
-                    extras: episode.toJson(),
+                    id: epToAdd.guid,
+                    album: epToAdd.podcastTitle,
+                    title: epToAdd.title,
+                    artUri: epToAdd.imageUrl != null ? Uri.parse(epToAdd.imageUrl!) : null,
+                    extras: epToAdd.toJson(),
                   ));
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已加入播放列表'), duration: Duration(seconds: 1)));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已加入播放列表'), duration: Duration(seconds: 1)));
+                  }
                 },
               ),
               StreamBuilder<PlaybackState>(
@@ -248,11 +267,29 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                       size: 28,
                       color: Colors.tealAccent,
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       if (isCurrent) {
                         playing ? audioHandler.pause() : audioHandler.play();
                       } else {
-                        audioHandler.playEpisode(episode);
+                        var epToPlay = episode;
+                        if (epToPlay.audioUrl == null) {
+                          // Show loading indicator or snackbar
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('正在解析音频地址...'), duration: Duration(seconds: 1)),
+                          );
+                          final resolved = await ref.read(podcastServiceProvider).resolveEpisodeUrl(episode);
+                          if (resolved != null) {
+                            epToPlay = resolved;
+                          } else {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('无法解析音频地址')),
+                              );
+                            }
+                            return;
+                          }
+                        }
+                        audioHandler.playEpisode(epToPlay);
                       }
                     },
                   );
