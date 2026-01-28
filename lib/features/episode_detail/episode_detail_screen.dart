@@ -144,11 +144,11 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
             const SizedBox(height: 24),
             Row(
               children: [
-                const Icon(Icons.timer_outlined, size: 16, color: Colors.blueAccent),
+                const Icon(Icons.timer_outlined, size: 16, color: Colors.tealAccent),
                 const SizedBox(width: 4),
                 Text(
                   '${_formatDuration(widget.episode.duration)} · ${widget.episode.pubDate?.year}/${widget.episode.pubDate?.month}/${widget.episode.pubDate?.day}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
               ],
             ),
@@ -173,10 +173,11 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[900],
+                  color: Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white24),
                 ),
-                child: Text(_aiSummary!, style: const TextStyle(color: Colors.white70, height: 1.5)),
+                child: Text(_aiSummary!, style: const TextStyle(color: Colors.white, height: 1.5)),
               ),
             const SizedBox(height: 24),
             const Text('本期节目的主要内容有：', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
@@ -184,9 +185,15 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
             HtmlWidget(
               widget.episode.description ?? '',
               customStylesBuilder: (element) {
-                return {'color': 'white'};
+                // Force white color for text and ensure backgrounds are transparent
+                // This targets the element itself and all its children by inheritance
+                return {
+                  'color': 'white',
+                  'background-color': 'transparent',
+                  'font-weight': 'normal',
+                };
               },
-              textStyle: const TextStyle(height: 1.8, color: Colors.white),
+              textStyle: const TextStyle(height: 1.8, color: Colors.white, fontSize: 15),
             ),
           ],
         ),
