@@ -5,6 +5,8 @@ import 'package:audio_service/audio_service.dart';
 import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
 import '../ai_agent/ai_agent_screen.dart';
+import '../podcast_detail/podcast_detail_screen.dart';
+import '../player/player_screen.dart';
 
 class EpisodeDetailScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -60,9 +62,33 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
     return Duration.zero;
   }
 
+  void _navigateToPodcastDetail() async {
+    final podcastService = ref.read(podcastServiceProvider);
+    // Note: widget.episode.audioUrl is used to identify the feed if needed, 
+    // but we usually need the feedUrl. 
+    // For now, we search by podcastTitle to find the best match or if we had feedUrl in Episode model.
+    // In EchoPod, we might need to add feedUrl to Episode model for better accuracy.
+    // As a fallback, we'll try to find it in subscriptions or search.
+    final subs = await ref.read(subscriptionsProvider.future);
+    final existing = subs.where((p) => p.title == widget.episode.podcastTitle).firstOrNull;
+    
+    if (existing != null) {
+      if (mounted) {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => PodcastDetailScreen(podcast: existing)));
+      }
+    } else {
+      // Search for the podcast to get its metadata/feedUrl
+      final results = await podcastService.searchPodcasts(widget.episode.podcastTitle);
+      if (results.isNotEmpty && mounted) {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => PodcastDetailScreen(podcast: results.first)));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final audioHandler = ref.watch(audioHandlerProvider);
+    final isSubscribedAsync = ref.watch(subscriptionsProvider).whenData((subs) => subs.any((p) => p.title == widget.episode.podcastTitle));
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -73,14 +99,26 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          TextButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('订阅'),
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.teal.withOpacity(0.1),
-              foregroundColor: Colors.tealAccent,
+          isSubscribedAsync.when(
+            data: (isSubscribed) => TextButton.icon(
+              onPressed: isSubscribed ? null : () async {
+                final podcastService = ref.read(podcastServiceProvider);
+                final storageService = ref.read(storageServiceProvider);
+                final results = await podcastService.searchPodcasts(widget.episode.podcastTitle);
+                if (results.isNotEmpty) {
+                  await storageService.subscribe(results.first);
+                  ref.invalidate(subscriptionsProvider);
+                }
+              },
+              icon: Icon(isSubscribed ? Icons.check : Icons.add, size: 18),
+              label: Text(isSubscribed ? '已订阅' : '订阅'),
+              style: TextButton.styleFrom(
+                backgroundColor: isSubscribed ? Colors.white10 : Colors.teal.withOpacity(0.1),
+                foregroundColor: isSubscribed ? Colors.white70 : Colors.tealAccent,
+              ),
             ),
+            loading: () => const SizedBox(width: 40, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
+            error: (_, __) => const SizedBox(),
           ),
           const SizedBox(width: 16),
         ],
@@ -112,14 +150,23 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.episode.title,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => PlayerScreen(episode: widget.episode)),
+                        ),
+                        child: Text(
+                          widget.episode.title,
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        '${widget.episode.podcastTitle} >',
-                        style: const TextStyle(color: Colors.tealAccent, fontSize: 14),
+                      GestureDetector(
+                        onTap: _navigateToPodcastDetail,
+                        child: Text(
+                          '${widget.episode.podcastTitle} >',
+                          style: const TextStyle(color: Colors.tealAccent, fontSize: 14),
+                        ),
                       ),
                     ],
                   ),
