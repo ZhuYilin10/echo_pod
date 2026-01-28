@@ -54,7 +54,7 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
               foregroundColor: Colors.tealAccent,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 16),
         ],
       ),
       body: SingleChildScrollView(
@@ -147,8 +147,8 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                 const Icon(Icons.timer_outlined, size: 16, color: Colors.blueAccent),
                 const SizedBox(width: 4),
                 Text(
-                  '${widget.episode.duration ?? '未知'} · ${widget.episode.pubDate?.year}/${widget.episode.pubDate?.month}/${widget.episode.pubDate?.day}',
-                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  '${_formatDuration(widget.episode.duration)} · ${widget.episode.pubDate?.year}/${widget.episode.pubDate?.month}/${widget.episode.pubDate?.day}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
             ),
@@ -199,5 +199,28 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
       return null;
     }
     return state.position.inMilliseconds / item.duration!.inMilliseconds;
+  }
+
+  String _formatDuration(String? durationStr) {
+    if (durationStr == null) return '未知时长';
+    try {
+      if (durationStr.contains(':')) {
+        final parts = durationStr.split(':');
+        if (parts.length == 3) {
+          final hours = int.parse(parts[0]);
+          final minutes = int.parse(parts[1]);
+          if (hours > 0) return '$hours小时$minutes分钟';
+          return '$minutes分钟';
+        } else if (parts.length == 2) {
+          return '${int.parse(parts[0])}分钟';
+        }
+      }
+      final seconds = double.tryParse(durationStr)?.toInt() ?? 0;
+      if (seconds > 0) {
+        final minutes = (seconds / 60).floor();
+        return '$minutes分钟';
+      }
+    } catch (_) {}
+    return durationStr;
   }
 }
