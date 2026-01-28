@@ -23,10 +23,29 @@ class BilibiliVideoInfo {
 class BilibiliParserService {
   static const String _apiUrl = 'https://api.mir6.com/api/bzjiexi';
 
+  Future<String> resolveShortUrl(String url) async {
+    if (!url.contains('b23.tv')) return url;
+
+    try {
+      final client = http.Client();
+      final request = http.Request('GET', Uri.parse(url))..followRedirects = false;
+      final response = await client.send(request);
+      
+      final location = response.headers['location'];
+      if (location != null) {
+        return location.split('?').first; // Strip tracking params
+      }
+    } catch (e) {
+      debugPrint('Error resolving short URL: $e');
+    }
+    return url;
+  }
+
   Future<BilibiliVideoInfo> parse(String url) async {
     try {
+      final resolvedUrl = await resolveShortUrl(url);
       final uri = Uri.parse(_apiUrl).replace(queryParameters: {
-        'url': url,
+        'url': resolvedUrl,
         'type': 'json',
       });
 

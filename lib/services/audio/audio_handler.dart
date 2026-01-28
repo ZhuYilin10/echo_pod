@@ -29,7 +29,11 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   bool _isWebMode = false;
 
   EchoPodAudioHandler(this._liveActivityService, this._storageService) {
-    _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
+    _player.playbackEventStream.map(_transformEvent).listen((state) {
+      if (!_isWebMode) {
+        playbackState.add(state);
+      }
+    });
     _player.setAudioSource(_playlist);
 
     _player.currentIndexStream.listen((index) async {
