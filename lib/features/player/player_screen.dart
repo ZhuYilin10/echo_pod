@@ -9,6 +9,7 @@ import '../../services/audio/audio_handler.dart';
 import 'playlist_screen.dart';
 import '../share/share_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
+import '../podcast_detail/podcast_detail_screen.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -21,9 +22,27 @@ class PlayerScreen extends ConsumerStatefulWidget {
 class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   bool _isSkipSilenceEnabled = false;
 
+  void _navigateToPodcastDetail() async {
+    final podcastService = ref.read(podcastServiceProvider);
+    final subs = await ref.read(subscriptionsProvider.future);
+    final existing = subs.where((p) => p.title == widget.episode.podcastTitle).firstOrNull;
+    
+    if (existing != null) {
+      if (mounted) {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => PodcastDetailScreen(podcast: existing)));
+      }
+    } else {
+      final results = await podcastService.searchPodcasts(widget.episode.podcastTitle);
+      if (results.isNotEmpty && mounted) {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => PodcastDetailScreen(podcast: results.first)));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final audioHandler = ref.watch(audioHandlerProvider);
+    final isSubscribedAsync = ref.watch(subscriptionsProvider).whenData((subs) => subs.any((p) => p.title == widget.episode.podcastTitle));
 
     return Scaffold(
       backgroundColor: const Color(0xFF001F1F),
@@ -98,24 +117,46 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Flexible(
-                  child: Text(
-                    widget.episode.podcastTitle,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.tealAccent, fontSize: 14),
+                  child: GestureDetector(
+                    onTap: _navigateToPodcastDetail,
+                    child: Text(
+                      widget.episode.podcastTitle,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.tealAccent, fontSize: 14),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.tealAccent.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: Colors.tealAccent),
+                isSubscribedAsync.when(
+                  data: (isSubscribed) => GestureDetector(
+                    onTap: isSubscribed ? null : () async {
+                      final podcastService = ref.read(podcastServiceProvider);
+                      final storageService = ref.read(storageServiceProvider);
+                      final results = await podcastService.searchPodcasts(widget.episode.podcastTitle);
+                      if (results.isNotEmpty) {
+                        await storageService.subscribe(results.first);
+                        ref.invalidate(subscriptionsProvider);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: isSubscribed ? Colors.white10 : Colors.tealAccent.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: isSubscribed ? Colors.white24 : Colors.tealAccent),
+                      ),
+                      child: Text(
+                        isSubscribed ? '已订阅' : '+ 订阅',
+                        style: TextStyle(
+                          color: isSubscribed ? Colors.white54 : Colors.tealAccent,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
-                  child: const Text(
-                    '+ 订阅',
-                    style: TextStyle(color: Colors.tealAccent, fontSize: 10, fontWeight: FontWeight.bold),
-                  ),
+                  loading: () => const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  error: (_, __) => const SizedBox(),
                 ),
               ],
             ),
