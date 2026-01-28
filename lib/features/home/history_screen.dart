@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
 import '../player/player_screen.dart';
 
+import '../episode_detail/episode_detail_screen.dart';
+
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 
@@ -48,16 +50,9 @@ class HistoryScreen extends ConsumerWidget {
                 title: Text(episode.title, maxLines: 2, overflow: TextOverflow.ellipsis),
                 subtitle: Text(episode.podcastTitle, style: Theme.of(context).textTheme.bodySmall),
                 onTap: () {
-                  ref.read(audioHandlerProvider).playEpisode(episode, autoPlay: false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('已加载: ${episode.title}'),
-                      action: SnackBarAction(
-                        label: '播放',
-                        onPressed: () => ref.read(audioHandlerProvider).play(),
-                      ),
-                      duration: const Duration(seconds: 2),
-                    ),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => EpisodeDetailScreen(episode: episode)),
                   );
                 },
               );

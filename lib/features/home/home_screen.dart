@@ -200,16 +200,9 @@ class HomeScreen extends ConsumerWidget {
       title: Text(episode.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
       subtitle: Text('${episode.podcastTitle} · ${episode.pubDate?.month}月${episode.pubDate?.day}日', style: const TextStyle(fontSize: 12, color: Colors.grey)),
       onTap: () {
-        ref.read(audioHandlerProvider).playEpisode(episode, autoPlay: false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('已加载: ${episode.title}'),
-            action: SnackBarAction(
-              label: '播放',
-              onPressed: () => ref.read(audioHandlerProvider).play(),
-            ),
-            duration: const Duration(seconds: 2),
-          ),
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => EpisodeDetailScreen(episode: episode)),
         );
       },
     );

@@ -65,16 +65,9 @@ class DownloadsScreen extends ConsumerWidget {
                   },
                 ),
                 onTap: () {
-                  ref.read(audioHandlerProvider).playEpisode(episode, autoPlay: false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('已加载: ${episode.title}'),
-                      action: SnackBarAction(
-                        label: '播放',
-                        onPressed: () => ref.read(audioHandlerProvider).play(),
-                      ),
-                      duration: const Duration(seconds: 2),
-                    ),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => EpisodeDetailScreen(episode: episode)),
                   );
                 },
               );
