@@ -47,11 +47,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 40),
         child: Column(
           children: [
-            const Spacer(),
+            const Spacer(flex: 2),
             // Large Artwork with Hero
             Hero(
               tag: 'episode_artwork_${widget.episode.guid}',
               child: Container(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
@@ -75,22 +76,25 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 24),
             // Title & Channel
             Text(
               widget.episode.title,
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  widget.episode.podcastTitle,
-                  style: const TextStyle(color: Colors.tealAccent, fontSize: 16),
+                Flexible(
+                  child: Text(
+                    widget.episode.podcastTitle,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.tealAccent, fontSize: 14),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Container(
@@ -102,7 +106,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   ),
                   child: const Text(
                     '+ 订阅',
-                    style: TextStyle(color: Colors.tealAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Colors.tealAccent, fontSize: 10, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -171,7 +175,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             // Progress Bar
             StreamBuilder<PositionData>(
               stream: _positionDataStream(audioHandler),
@@ -191,7 +195,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 );
               },
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 24),
             // Playback Controls
             StreamBuilder<PlaybackState>(
               stream: audioHandler.playbackState,
@@ -206,7 +210,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     ),
                     const SizedBox(width: 24),
                     IconButton(
-                      iconSize: 84,
+                      iconSize: 72,
                       icon: Icon(playing ? Icons.pause_circle_filled : Icons.play_circle_filled, color: Colors.white),
                       onPressed: playing ? audioHandler.pause : audioHandler.play,
                     ),
@@ -219,7 +223,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 );
               },
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 32),
             // Bottom Bar
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -236,7 +240,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
           ],
         ),
       ),
