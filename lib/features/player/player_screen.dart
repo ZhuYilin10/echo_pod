@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/services.dart';
 import 'package:rxdart/rxdart.dart';
 import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
@@ -461,9 +462,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           activeColor: Colors.tealAccent,
                           inactiveColor: Colors.white10,
                           onChanged: (val) {
-                            setModalState(() => currentSpeed =
-                                double.parse(val.toStringAsFixed(1)));
-                            audioHandler.setSpeed(currentSpeed);
+                            final newSpeed =
+                                double.parse(val.toStringAsFixed(1));
+                            if (newSpeed != currentSpeed) {
+                              HapticFeedback.selectionClick();
+                              setModalState(() => currentSpeed = newSpeed);
+                              audioHandler.setSpeed(currentSpeed);
+                            }
                           },
                         ),
                       ),
