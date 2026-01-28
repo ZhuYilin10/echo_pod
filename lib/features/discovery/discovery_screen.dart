@@ -37,6 +37,24 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // Fetch initial data manually since ref.listen might miss the first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchInitialPodcasts();
+    });
+  }
+
+  void _fetchInitialPodcasts() async {
+    final podcasts = await ref.read(genrePodcastsProvider(_selectedGenreId).future);
+    if (mounted) {
+      setState(() {
+        _allPodcasts = podcasts;
+        _displayedPodcasts.clear();
+        final count = _pageSize.clamp(0, _allPodcasts.length);
+        if (count > 0) {
+          _displayedPodcasts.addAll(_allPodcasts.sublist(0, count));
+        }
+      });
+    }
   }
 
   @override
@@ -201,15 +219,16 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   color: isSelected ? Colors.white : Colors.deepPurpleAccent),
               selected: isSelected,
               onSelected: (selected) {
+                if (_selectedGenreId == cat['id']) return;
                 setState(() {
                   _selectedGenreId = cat['id'];
-                  _selectedGenreName =
-                      isSelected ? _selectedGenreName : '${cat['name']}频道';
+                  _selectedGenreName = '${cat['name']}频道';
                   // Reset pagination
                   _allPodcasts.clear();
                   _displayedPodcasts.clear();
                   _isLoadingMore = false;
                 });
+                _fetchInitialPodcasts();
               },
               selectedColor: Colors.deepPurpleAccent,
               checkmarkColor: Colors.white,
