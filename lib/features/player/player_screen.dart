@@ -407,16 +407,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     return Rx.combineLatest3<PlaybackState, MediaItem?, void, PositionData>(
         audioHandler.playbackState,
         audioHandler.mediaItem,
-        Stream.periodic(const Duration(milliseconds: 200)),
+        Stream.periodic(const Duration(milliseconds: 500)),
         (playbackState, mediaItem, _) {
-      Duration position = playbackState.updatePosition;
-      if (playbackState.playing) {
-        final now = DateTime.now();
-        final elapsed = now.difference(playbackState.updateTime);
-        position += elapsed * playbackState.speed;
-      }
       return PositionData(
-        position,
+        playbackState.position,
         playbackState.bufferedPosition,
         mediaItem?.duration ?? Duration.zero,
       );

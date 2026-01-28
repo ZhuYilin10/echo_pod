@@ -49,8 +49,18 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
     DateTime? lastPositionUpdate;
     Duration? lastPosition;
 
+    _player.durationStream.listen((duration) {
+      if (duration != null && mediaItem.value != null) {
+        if (mediaItem.value!.duration != duration) {
+          mediaItem.add(mediaItem.value!.copyWith(duration: duration));
+        }
+      }
+    });
+
     _player.positionStream.listen((position) {
       _updateLiveActivity(position);
+      // Update playback state with the current position to keep UI in sync
+      playbackState.add(_transformEvent(_player.playbackEvent));
 
       if (_isSkipSilenceEnabled &&
           _player.playing &&
@@ -433,7 +443,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
       updatePosition: _player.position,
       bufferedPosition: _player.bufferedPosition,
       speed: _player.speed,
-      queueIndex: event.currentIndex,
+      queueIndex: _player.currentIndex,
     );
   }
 }
