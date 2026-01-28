@@ -39,6 +39,8 @@ dependencies:
   screenshot: ^3.0.0
   flutter_inappwebview: ^6.1.5
   receive_sharing_intent: ^1.6.3
+  video_player: ^2.9.5
+  http: ^1.6.0
   
 dev_dependencies:
   flutter_test:

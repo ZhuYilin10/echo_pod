@@ -47,7 +47,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
 
   void _fetchInitialData() async {
     if (!mounted) return;
-    
+
     if (_selectedGenreId == 'trending_episodes') {
       final episodes = await ref.read(trendingEpisodesProvider.future);
       if (mounted) {
@@ -61,7 +61,8 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         });
       }
     } else {
-      final podcasts = await ref.read(genrePodcastsProvider(_selectedGenreId).future);
+      final podcasts =
+          await ref.read(genrePodcastsProvider(_selectedGenreId).future);
       if (mounted) {
         setState(() {
           _allData = podcasts;
@@ -142,6 +143,8 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
       podcastTitle: '万物皆可播',
       audioUrl: url, // Store URL in audioUrl for the web player to catch
       podcastFeedUrl: 'web_pseudo_feed',
+      imageUrl:
+          'https://images.unsplash.com/photo-1478737270239-2f02b77ac6d5?q=80&w=1000&auto=format&fit=crop', // Default "Audio/Tech" style image
     );
 
     ref.read(audioHandlerProvider).playEpisode(episode);
@@ -171,9 +174,10 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   @override
   Widget build(BuildContext context) {
     // Determine which async provider to watch
-    final AsyncValue<dynamic> dataAsync = _selectedGenreId == 'trending_episodes'
-        ? ref.watch(trendingEpisodesProvider)
-        : ref.watch(genrePodcastsProvider(_selectedGenreId));
+    final AsyncValue<dynamic> dataAsync =
+        _selectedGenreId == 'trending_episodes'
+            ? ref.watch(trendingEpisodesProvider)
+            : ref.watch(genrePodcastsProvider(_selectedGenreId));
 
     return Scaffold(
       appBar: AppBar(
@@ -181,7 +185,8 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.auto_awesome_rounded, color: Colors.tealAccent),
+            icon: const Icon(Icons.auto_awesome_rounded,
+                color: Colors.tealAccent),
             tooltip: '万物皆可播 (实验室)',
             onPressed: () => _showWebAudioDialog(context),
           ),
@@ -254,7 +259,8 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
             color: Colors.deepPurpleAccent.withOpacity(0.7)),
       ),
       title: Text(podcast.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-      subtitle: Text(podcast.artist ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(podcast.artist ?? '',
+          maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Image.network(
@@ -283,8 +289,14 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
             fontWeight: FontWeight.bold,
             color: Colors.tealAccent),
       ),
-      title: Text(episode.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-      subtitle: Text(episode.podcastTitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      title: Text(episode.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      subtitle: Text(episode.podcastTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12, color: Colors.grey)),
       trailing: StreamBuilder<MediaItem?>(
         stream: audioHandler.mediaItem,
         builder: (context, snapshot) {
@@ -298,9 +310,13 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   var epToAdd = episode;
                   if (epToAdd.audioUrl == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('正在解析音频地址...'), duration: Duration(seconds: 1)),
+                      const SnackBar(
+                          content: Text('正在解析音频地址...'),
+                          duration: Duration(seconds: 1)),
                     );
-                    final resolved = await ref.read(podcastServiceProvider).resolveEpisodeUrl(episode);
+                    final resolved = await ref
+                        .read(podcastServiceProvider)
+                        .resolveEpisodeUrl(episode);
                     if (resolved != null) {
                       epToAdd = resolved;
                     } else {
@@ -316,11 +332,15 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                     id: epToAdd.guid,
                     album: epToAdd.podcastTitle,
                     title: epToAdd.title,
-                    artUri: epToAdd.imageUrl != null ? Uri.parse(epToAdd.imageUrl!) : null,
+                    artUri: epToAdd.imageUrl != null
+                        ? Uri.parse(epToAdd.imageUrl!)
+                        : null,
                     extras: epToAdd.toJson(),
                   ));
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已加入播放列表'), duration: Duration(seconds: 1)));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                        content: Text('已加入播放列表'),
+                        duration: Duration(seconds: 1)));
                   }
                 },
               ),
@@ -330,7 +350,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   final playing = pbSnapshot.data?.playing ?? false;
                   return IconButton(
                     icon: Icon(
-                      (isCurrent && playing) ? Icons.pause_circle_outline_rounded : Icons.play_circle_outline_rounded,
+                      (isCurrent && playing)
+                          ? Icons.pause_circle_outline_rounded
+                          : Icons.play_circle_outline_rounded,
                       size: 28,
                       color: Colors.tealAccent,
                     ),
@@ -342,9 +364,13 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                         if (epToPlay.audioUrl == null) {
                           // Show loading indicator or snackbar
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('正在解析音频地址...'), duration: Duration(seconds: 1)),
+                            const SnackBar(
+                                content: Text('正在解析音频地址...'),
+                                duration: Duration(seconds: 1)),
                           );
-                          final resolved = await ref.read(podcastServiceProvider).resolveEpisodeUrl(episode);
+                          final resolved = await ref
+                              .read(podcastServiceProvider)
+                              .resolveEpisodeUrl(episode);
                           if (resolved != null) {
                             epToPlay = resolved;
                           } else {
@@ -368,7 +394,8 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
       ),
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => EpisodeDetailScreen(episode: episode)),
+        MaterialPageRoute(
+            builder: (context) => EpisodeDetailScreen(episode: episode)),
       ),
     );
   }

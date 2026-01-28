@@ -52,7 +52,10 @@ class MiniPlayer extends ConsumerWidget {
                       alignment: Alignment.centerLeft,
                       widthFactor: progress.clamp(0.0, 1.0),
                       child: Container(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.15),
                       ),
                     ),
                   );
@@ -61,19 +64,35 @@ class MiniPlayer extends ConsumerWidget {
               // Main Content
               InkWell(
                 onTap: () {
-                  final episode = mediaItem.extras != null
-                      ? Episode.fromJson(mediaItem.extras!)
-                      : Episode(
-                          guid: mediaItem.id,
-                          title: mediaItem.title,
-                          podcastTitle: mediaItem.album ?? '',
-                          imageUrl: mediaItem.artUri?.toString(),
-                          audioUrl: mediaItem.id,
-                          podcastFeedUrl: '',
-                        );
+                  // Unified Navigation for both Audio and Video
+                  Episode episode;
+                  if (mediaItem.id.startsWith('web_')) {
+                    // Start with basic info, detailed info might be in controller state but this is sufficient for navigation
+                    episode = Episode(
+                      guid: mediaItem.id,
+                      title: mediaItem.title,
+                      podcastTitle: mediaItem.album ?? '',
+                      imageUrl: mediaItem.artUri?.toString(),
+                      audioUrl: mediaItem.id, // url is id
+                      podcastFeedUrl: '',
+                    );
+                  } else {
+                    episode = mediaItem.extras != null
+                        ? Episode.fromJson(mediaItem.extras!)
+                        : Episode(
+                            guid: mediaItem.id,
+                            title: mediaItem.title,
+                            podcastTitle: mediaItem.album ?? '',
+                            imageUrl: mediaItem.artUri?.toString(),
+                            audioUrl: mediaItem.id,
+                            podcastFeedUrl: '',
+                          );
+                  }
+
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)),
+                    MaterialPageRoute(
+                        builder: (context) => PlayerScreen(episode: episode)),
                   );
                 },
                 child: Padding(
@@ -89,7 +108,8 @@ class MiniPlayer extends ConsumerWidget {
                             width: 50,
                             height: 50,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Icon(Icons.podcasts),
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.podcasts),
                           ),
                         ),
                       ),
@@ -99,11 +119,24 @@ class MiniPlayer extends ConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              mediaItem.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            Row(
+                              children: [
+                                if (mediaItem.id.startsWith('web_'))
+                                  const Padding(
+                                    padding: EdgeInsets.only(right: 6),
+                                    child: Icon(Icons.ondemand_video,
+                                        size: 16, color: Colors.redAccent),
+                                  ),
+                                Expanded(
+                                  child: Text(
+                                    mediaItem.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
                             ),
                             Text(
                               mediaItem.album ?? '',
@@ -119,18 +152,23 @@ class MiniPlayer extends ConsumerWidget {
                         builder: (context, snapshot) {
                           final playing = snapshot.data?.playing ?? false;
                           return IconButton(
-                            icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-                            onPressed: playing ? audioHandler.pause : audioHandler.play,
+                            icon:
+                                Icon(playing ? Icons.pause : Icons.play_arrow),
+                            onPressed: playing
+                                ? audioHandler.pause
+                                : audioHandler.play,
                           );
                         },
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.playlist_play_rounded),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const PlaylistScreen()),
+                      if (!mediaItem.id.startsWith('web_'))
+                        IconButton(
+                          icon: const Icon(Icons.playlist_play_rounded),
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const PlaylistScreen()),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),

@@ -12,6 +12,7 @@ import '../share/share_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
 import '../common/download_button.dart';
+import '../../services/web_podcast_service.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -89,112 +90,177 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           children: [
             const Spacer(flex: 2),
             // Large Artwork with Hero
-            Hero(
-              tag: 'episode_artwork_${widget.episode.guid}',
-              child: Container(
-                constraints: BoxConstraints(
-                    maxHeight: MediaQuery.of(context).size.height * 0.4),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.4),
-                      blurRadius: 40,
-                      offset: const Offset(0, 20),
-                    )
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: Image.network(
-                      widget.episode.imageUrl ?? '',
-                      width: double.infinity,
-                      fit: BoxFit.cover,
+            // Large Artwork or Video Player
+            // We use a Consumer to watch the video controller state.
+            Consumer(
+              builder: (context, ref, child) {
+                final videoState = ref.watch(videoPodcastControllerProvider);
+
+                // If video is "active" (meaning we have loaded a native video), show it.
+                // Note: isExpanded was used for overlay, but here we reuse it or just check videoUrl.
+                if (videoState.videoUrl != null) {
+                  return Container(
+                    constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.4),
+                          blurRadius: 40,
+                          offset: const Offset(0, 20),
+                        )
+                      ],
                     ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // Title & Channel
-            Text(
-              widget.episode.title,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: GestureDetector(
-                    onTap: _navigateToPodcastDetail,
-                    child: Text(
-                      widget.episode.podcastTitle,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: Colors.tealAccent, fontSize: 14),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                isSubscribedAsync.when(
-                  data: (isSubscribed) => GestureDetector(
-                    onTap: isSubscribed
-                        ? null
-                        : () async {
-                            final podcastService =
-                                ref.read(podcastServiceProvider);
-                            final storageService =
-                                ref.read(storageServiceProvider);
-                            final results = await podcastService
-                                .searchPodcasts(widget.episode.podcastTitle);
-                            if (results.isNotEmpty) {
-                              await storageService.subscribe(results.first);
-                              ref.invalidate(subscriptionsProvider);
-                              ref.invalidate(
-                                  isSubscribedProvider(results.first.feedUrl));
-                            }
-                          },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: isSubscribed
-                            ? Colors.white10
-                            : Colors.tealAccent.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                            color: isSubscribed
-                                ? Colors.white24
-                                : Colors.tealAccent),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9, // Video Aspect Ratio
+                        child:
+                            const VideoPlayerWidget(), // Reusing the widget which now returns the player
                       ),
-                      child: Text(
-                        isSubscribed ? '已订阅' : '+ 订阅',
-                        style: TextStyle(
-                          color:
-                              isSubscribed ? Colors.white54 : Colors.tealAccent,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                    ),
+                  );
+                }
+
+                // Default Artwork
+                return Hero(
+                  tag: 'episode_artwork_${widget.episode.guid}',
+                  child: Container(
+                    constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.4),
+                          blurRadius: 40,
+                          offset: const Offset(0, 20),
+                        )
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: AspectRatio(
+                        aspectRatio: 1,
+                        child: Image.network(
+                          widget.episode.imageUrl ?? '',
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Colors.grey[900],
+                            child: const Icon(Icons.music_note,
+                                color: Colors.white54, size: 48),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                  loading: () => const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2)),
-                  error: (_, __) => const SizedBox(),
-                ),
-              ],
+                );
+              },
             ),
+            const SizedBox(height: 24),
+            // Title & Channel
+            // Title & Channel
+            // Title & Channel
+            StreamBuilder<MediaItem?>(
+                stream: audioHandler.mediaItem,
+                builder: (context, snapshot) {
+                  final mediaItem = snapshot.data;
+                  final currentId = mediaItem?.id;
+                  final isCurrent = currentId == widget.episode.guid;
+                  final title = isCurrent
+                      ? (mediaItem?.title ?? widget.episode.title)
+                      : widget.episode.title;
+                  final subtitle = isCurrent
+                      ? (mediaItem?.album ?? widget.episode.podcastTitle)
+                      : widget.episode.podcastTitle;
+
+                  return Column(
+                    children: [
+                      Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: GestureDetector(
+                              onTap: _navigateToPodcastDetail,
+                              child: Text(
+                                subtitle,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    color: Colors.tealAccent, fontSize: 14),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          isSubscribedAsync.when(
+                            data: (isSubscribed) => GestureDetector(
+                              onTap: isSubscribed
+                                  ? null
+                                  : () async {
+                                      final podcastService =
+                                          ref.read(podcastServiceProvider);
+                                      final storageService =
+                                          ref.read(storageServiceProvider);
+                                      final results =
+                                          await podcastService.searchPodcasts(
+                                              widget.episode.podcastTitle);
+                                      if (results.isNotEmpty) {
+                                        await storageService
+                                            .subscribe(results.first);
+                                        ref.invalidate(subscriptionsProvider);
+                                        ref.invalidate(isSubscribedProvider(
+                                            results.first.feedUrl));
+                                      }
+                                    },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isSubscribed
+                                      ? Colors.white10
+                                      : Colors.tealAccent.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                      color: isSubscribed
+                                          ? Colors.white24
+                                          : Colors.tealAccent),
+                                ),
+                                child: Text(
+                                  isSubscribed ? '已订阅' : '+ 订阅',
+                                  style: TextStyle(
+                                    color: isSubscribed
+                                        ? Colors.white54
+                                        : Colors.tealAccent,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            loading: () => const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2)),
+                            error: (_, __) => const SizedBox(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                }),
             const Spacer(),
             // Extra Controls (Speed, Sleep Timer, Skip Silence)
             Padding(
@@ -208,7 +274,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     builder: (context, snapshot) {
                       final speed = snapshot.data?.speed ?? 1.0;
                       return TextButton(
-                        onPressed: () => _showSpeedDialog(context, audioHandler),
+                        onPressed: () =>
+                            _showSpeedDialog(context, audioHandler),
                         child: Text(
                           '${speed}x',
                           style: const TextStyle(
@@ -248,22 +315,20 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   ),
                   // Skip Silence
                   StreamBuilder<bool>(
-                    stream: audioHandler.skipSilenceStream,
-                    builder: (context, snapshot) {
-                      final isEnabled = snapshot.data ?? false;
-                      return IconButton(
-                        icon: Icon(
-                          Icons.volume_off_outlined,
-                          color: isEnabled
-                              ? Colors.tealAccent
-                              : Colors.white70,
-                        ),
-                        onPressed: () {
-                          audioHandler.setSkipSilence(!isEnabled);
-                        },
-                      );
-                    }
-                  ),
+                      stream: audioHandler.skipSilenceStream,
+                      builder: (context, snapshot) {
+                        final isEnabled = snapshot.data ?? false;
+                        return IconButton(
+                          icon: Icon(
+                            Icons.volume_off_outlined,
+                            color:
+                                isEnabled ? Colors.tealAccent : Colors.white70,
+                          ),
+                          onPressed: () {
+                            audioHandler.setSkipSilence(!isEnabled);
+                          },
+                        );
+                      }),
                   // Download Button
                   DownloadButton(
                       episode: widget.episode, color: Colors.white70),
@@ -495,9 +560,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   onChanged: (val) {
                     setModalState(() => overrideChannel = val);
                     if (val) {
-                      ref
-                          .read(storageServiceProvider)
-                          .savePodcastSpeed(widget.episode.podcastFeedUrl, currentSpeed);
+                      ref.read(storageServiceProvider).savePodcastSpeed(
+                          widget.episode.podcastFeedUrl, currentSpeed);
                     }
                   },
                 ),

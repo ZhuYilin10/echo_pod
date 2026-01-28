@@ -7,6 +7,7 @@ import 'package:rxdart/rxdart.dart';
 import '../../core/models/episode.dart';
 import '../platform/live_activity_service.dart';
 import '../storage/storage_service.dart';
+import '../web_podcast_service.dart'; // Import WebAudioController
 
 class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   final _player = AudioPlayer();
@@ -21,6 +22,11 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   bool _isSkipSilenceEnabled = false;
   Duration _totalSavedTime = Duration.zero;
   final _timeSavedController = BehaviorSubject<Duration>.seeded(Duration.zero);
+
+  // Web Audio Support
+  VideoPodcastController? _webController;
+  StreamSubscription? _webSubscription;
+  bool _isWebMode = false;
 
   EchoPodAudioHandler(this._liveActivityService, this._storageService) {
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
@@ -74,7 +80,8 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
           lastPosition != null &&
           lastPositionUpdate != null) {
         final now = DateTime.now();
-        final wallElapsedMs = now.difference(lastPositionUpdate!).inMilliseconds;
+        final wallElapsedMs =
+            now.difference(lastPositionUpdate!).inMilliseconds;
         final audioElapsedMs = (position - lastPosition!).inMilliseconds;
         final expectedElapsedMs = (wallElapsedMs * _player.speed).round();
 
@@ -82,7 +89,8 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
         // threshold 300ms jitter is safe for 1 second interval
         if (audioElapsedMs > expectedElapsedMs + 300) {
           final savedMs = audioElapsedMs - expectedElapsedMs;
-          if (savedMs > 0 && savedMs < 10000) { // Limit to 10s jump to avoid seek confusion
+          if (savedMs > 0 && savedMs < 10000) {
+            // Limit to 10s jump to avoid seek confusion
             final saved = Duration(milliseconds: savedMs);
             _totalSavedTime += saved;
             _timeSavedController.add(_totalSavedTime);
@@ -105,6 +113,77 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
     });
 
     _init();
+  }
+
+  void setWebAudioController(VideoPodcastController controller) {
+    _webController = controller;
+    _webSubscription?.cancel();
+    _webSubscription = controller.stream.listen((state) {
+      if (!_isWebMode) return;
+
+      // Sync Web State to AudioService State
+      final playing = state.isPlaying;
+      final position = state.position;
+      final duration = state.duration;
+
+      // Sync Metadata (Title, Author, Cover)
+      // Check if we have new info that differs from current MediaItem
+      final currentItem = mediaItem.value;
+      if (currentItem != null && state.title != null) {
+        if (currentItem.title != state.title ||
+            (state.author != null && currentItem.artist != state.author) ||
+            (state.coverUrl != null &&
+                currentItem.artUri.toString() != state.coverUrl)) {
+          // Create updated item
+          // Note: "album" field is often used for Podcast Title/Author in this app
+          // We map 'author' -> 'album' (display logic usually shows album as subtitle)
+          mediaItem.add(currentItem.copyWith(
+              title: state.title ?? currentItem.title,
+              album: state.author ?? currentItem.album,
+              artist: state.author, // Set artist explicitly too
+              artUri: state.coverUrl != null
+                  ? Uri.parse(state.coverUrl!)
+                  : currentItem.artUri,
+              duration: state.duration > Duration.zero
+                  ? state.duration
+                  : currentItem.duration,
+              // We can also store description in extras if needed
+              extras: {
+                ...currentItem.extras ?? {},
+                'description': state.description,
+                'authorAvatar': state.authorAvatar,
+              }));
+        } else if (duration > Duration.zero &&
+            currentItem.duration != duration) {
+          // Just duration update
+          mediaItem.add(currentItem.copyWith(duration: duration));
+        }
+      }
+
+      // Update Live Activity
+      _updateLiveActivity(position);
+
+      playbackState.add(PlaybackState(
+        controls: [
+          // MediaControl.rewind,
+          if (playing) MediaControl.pause else MediaControl.play,
+          MediaControl.stop,
+          // MediaControl.fastForward,
+        ],
+        systemActions: const {
+          MediaAction.seek,
+          MediaAction.seekForward,
+          MediaAction.seekBackward,
+        },
+        androidCompactActionIndices: const [0, 1],
+        processingState: AudioProcessingState.ready,
+        playing: playing,
+        updatePosition: position,
+        bufferedPosition: position, // Assume buffered matches pos for now
+        speed: 1.0,
+        queueIndex: 0,
+      ));
+    });
   }
 
   Future<void> _init() async {
@@ -252,13 +331,29 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<void> play() => _player.play();
+  Future<void> play() async {
+    if (_isWebMode) {
+      await _webController?.play();
+    } else {
+      await _player.play();
+    }
+  }
 
   @override
-  Future<void> pause() => _player.pause();
+  Future<void> pause() async {
+    if (_isWebMode) {
+      await _webController?.pause();
+    } else {
+      await _player.pause();
+    }
+  }
 
   @override
   Future<void> stop() async {
+    if (_isWebMode) {
+      _isWebMode = false;
+      await _webController?.pause();
+    }
     await _saveCurrentPosition();
     _stopSaveTimer();
     await _player.stop();
@@ -269,10 +364,20 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> seek(Duration position) async {
+    if (_isWebMode) {
+      await _webController?.seek(position);
+    } else {
+      await _player.seek(position);
+    }
+  }
 
   @override
-  Future<void> setSpeed(double speed) => _player.setSpeed(speed);
+  Future<void> setSpeed(double speed) async {
+    if (!_isWebMode) {
+      await _player.setSpeed(speed);
+    }
+  }
 
   bool get isSkipSilenceEnabled => _isSkipSilenceEnabled;
 
@@ -328,6 +433,44 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> playEpisode(Episode episode, {bool autoPlay = true}) async {
+    // Check for Web Mode
+    if (episode.guid.startsWith('web_')) {
+      _isWebMode = true;
+
+      // Stop local player to release focus (but we keep the session technically)
+      // Actually we should pause just_audio so it doesn't fight.
+      if (_player.playing) await _player.pause();
+
+      // Notify System
+      final item = MediaItem(
+        id: episode.guid,
+        album: episode.podcastTitle,
+        title: episode.title,
+        artUri: episode.imageUrl != null ? Uri.parse(episode.imageUrl!) : null,
+        duration: null, // Unknown initially
+        extras: episode.toJson(),
+      );
+      mediaItem.add(item);
+      _currentEpisode = episode;
+
+      // Load URL in WebView
+      if (episode.audioUrl != null) {
+        await _webController?.loadUrl(episode.audioUrl!);
+        // NOTE: The web controller plays automatically in its logic or we can request it
+        if (autoPlay) {
+          // Give it a moment or rely on the web page to start?
+          // Our WebView logic has `video.play()` on load.
+        }
+      }
+      return;
+    }
+
+    // Normal Mode
+    if (_isWebMode) {
+      _isWebMode = false;
+      await _webController?.pause();
+    }
+
     if (episode.audioUrl == null || episode.audioUrl!.isEmpty) return;
 
     try {
@@ -344,7 +487,8 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
       );
 
       final currentQueue = queue.value;
-      final existingIndex = currentQueue.indexWhere((i) => i.id == episode.guid);
+      final existingIndex =
+          currentQueue.indexWhere((i) => i.id == episode.guid);
 
       if (existingIndex == 0) {
         // Already playing this one, just ensure it's playing
@@ -363,10 +507,10 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
         // Switch playback to the new index 0
         await _player.seek(Duration.zero, index: 0);
-        
+
         _currentEpisode = episode;
         mediaItem.add(item);
-        
+
         // Restore position for this episode
         final savedPosition = await _storageService.getPosition(episode.guid);
         if (savedPosition > Duration.zero) {
@@ -374,7 +518,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
         }
 
         if (autoPlay) await play();
-        
+
         await _storageService.addToHistory(episode);
         _startSaveTimer();
       }
