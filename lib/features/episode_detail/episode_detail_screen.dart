@@ -65,17 +65,14 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Hero(
-                  tag: 'episode_artwork_${widget.episode.guid}',
-                  child: Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      image: DecorationImage(
-                        image: NetworkImage(widget.episode.imageUrl ?? ''),
-                        fit: BoxFit.cover,
-                      ),
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    image: DecorationImage(
+                      image: NetworkImage(widget.episode.imageUrl ?? ''),
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),

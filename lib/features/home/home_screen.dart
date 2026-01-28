@@ -182,21 +182,18 @@ class HomeScreen extends ConsumerWidget {
   Widget _buildEpisodeItem(BuildContext context, WidgetRef ref, Episode episode) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: Hero(
-        tag: 'episode_artwork_${episode.guid}',
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.network(
-            episode.imageUrl ?? '',
+      leading: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          episode.imageUrl ?? '',
+          width: 48,
+          height: 48,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
             width: 48,
             height: 48,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              width: 48,
-              height: 48,
-              color: Colors.grey[800],
-              child: const Icon(Icons.music_note_rounded, size: 24, color: Colors.white24),
-            ),
+            color: Colors.grey[800],
+            child: const Icon(Icons.music_note_rounded, size: 24, color: Colors.white24),
           ),
         ),
       ),
