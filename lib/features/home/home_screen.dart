@@ -182,18 +182,21 @@ class HomeScreen extends ConsumerWidget {
   Widget _buildEpisodeItem(BuildContext context, WidgetRef ref, Episode episode) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          episode.imageUrl ?? '',
-          width: 48,
-          height: 48,
-          fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => Container(
+      leading: Hero(
+        tag: 'episode_artwork_${episode.guid}',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            episode.imageUrl ?? '',
             width: 48,
             height: 48,
-            color: Colors.grey[800],
-            child: const Icon(Icons.music_note_rounded, size: 24, color: Colors.white24),
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              width: 48,
+              height: 48,
+              color: Colors.grey[800],
+              child: const Icon(Icons.music_note_rounded, size: 24, color: Colors.white24),
+            ),
           ),
         ),
       ),
@@ -209,15 +212,15 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildEmptyStateSliver(BuildContext context) {
-    return SliverFillRemaining(
+    return const SliverFillRemaining(
       hasScrollBody: false,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.podcasts_rounded, size: 64, color: Colors.white24),
-            const SizedBox(height: 16),
-            const Text('暂无更新', style: TextStyle(color: Colors.grey)),
+            Icon(Icons.podcasts_rounded, size: 64, color: Colors.white24),
+            SizedBox(height: 16),
+            Text('暂无更新', style: TextStyle(color: Colors.grey)),
           ],
         ),
       ),

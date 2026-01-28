@@ -122,7 +122,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> setSpeed(double speed) => _player.setSpeed(speed);
 
   Future<void> setSkipSilence(bool enabled) async {
-    // Skipping silence logic would go here
+    await _player.setSkipSilenceEnabled(enabled);
   }
 
   Stream<Duration?> get sleepTimerStream => _sleepTimerController.stream;

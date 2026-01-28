@@ -18,7 +18,7 @@ class AIService {
         request: CreateChatCompletionRequest(
           model: ChatCompletionModel.modelId('gpt-4o-mini'),
           messages: [
-            ChatCompletionMessage.system(
+            const ChatCompletionMessage.system(
               content: '你是一个专业的播客内容总结助手。请根据提供的播客标题和描述，生成一段精炼、吸引人的中文总结。',
             ),
             ChatCompletionMessage.user(

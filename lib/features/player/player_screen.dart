@@ -18,6 +18,8 @@ class PlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _PlayerScreenState extends ConsumerState<PlayerScreen> {
+  bool _isSkipSilenceEnabled = false;
+
   @override
   Widget build(BuildContext context) {
     final audioHandler = ref.watch(audioHandlerProvider);
@@ -106,6 +108,70 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               ],
             ),
             const Spacer(),
+            // Extra Controls (Speed, Sleep Timer, Skip Silence)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Speed Control
+                  StreamBuilder<PlaybackState>(
+                    stream: audioHandler.playbackState,
+                    builder: (context, snapshot) {
+                      final speed = snapshot.data?.speed ?? 1.0;
+                      return TextButton(
+                        onPressed: () {
+                          final nextSpeed = speed >= 2.0 ? 0.5 : speed + 0.5;
+                          audioHandler.setSpeed(nextSpeed);
+                        },
+                        child: Text(
+                          '${speed}x',
+                          style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+                        ),
+                      );
+                    },
+                  ),
+                  // Sleep Timer
+                  StreamBuilder<Duration?>(
+                    stream: audioHandler.sleepTimerStream,
+                    builder: (context, snapshot) {
+                      final remaining = snapshot.data;
+                      return IconButton(
+                        icon: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.timer_outlined,
+                              color: remaining != null ? Colors.tealAccent : Colors.white70,
+                            ),
+                            if (remaining != null)
+                              Text(
+                                '${remaining.inMinutes}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')}',
+                                style: const TextStyle(color: Colors.tealAccent, fontSize: 10),
+                              ),
+                          ],
+                        ),
+                        onPressed: () => _showSleepTimerDialog(context, audioHandler),
+                      );
+                    },
+                  ),
+                  // Skip Silence
+                  IconButton(
+                    icon: Icon(
+                      Icons.volume_off_outlined,
+                      color: _isSkipSilenceEnabled ? Colors.tealAccent : Colors.white70,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _isSkipSilenceEnabled = !_isSkipSilenceEnabled;
+                      });
+                      audioHandler.setSkipSilence(_isSkipSilenceEnabled);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             // Progress Bar
             StreamBuilder<PositionData>(
               stream: _positionDataStream(audioHandler),
@@ -195,6 +261,42 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         mediaItem?.duration ?? Duration.zero,
       );
     });
+  }
+
+  void _showSleepTimerDialog(BuildContext context, EchoPodAudioHandler audioHandler) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text('定时关闭', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              ListTile(
+                title: const Text('关闭', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  audioHandler.setSleepTimer(null);
+                  Navigator.pop(context);
+                },
+              ),
+              ...[15, 30, 45, 60].map((mins) => ListTile(
+                title: Text('$mins 分钟后', style: const TextStyle(color: Colors.white)),
+                onTap: () {
+                  audioHandler.setSleepTimer(Duration(minutes: mins));
+                  Navigator.pop(context);
+                },
+              )),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

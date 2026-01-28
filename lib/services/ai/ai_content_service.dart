@@ -18,7 +18,7 @@ class AIContentService {
         request: CreateChatCompletionRequest(
           model: ChatCompletionModel.modelId('gpt-4o'),
           messages: [
-            ChatCompletionMessage.system(
+            const ChatCompletionMessage.system(
               content: '你是一个专业的播客文案助手。请根据提供的播客标题和描述，生成一份简洁、抓人眼球的中文摘要（150字以内）。',
             ),
             ChatCompletionMessage.user(
@@ -45,7 +45,7 @@ class AIContentService {
         request: CreateChatCompletionRequest(
           model: ChatCompletionModel.modelId('gpt-4o'),
           messages: [
-            ChatCompletionMessage.system(
+            const ChatCompletionMessage.system(
               content: '你是一个专业的金句提炼专家。请从提供的播客内容中，提炼出一句最扎心、最具启发性或最感人的话（50字以内）。如果内容不够丰富，请根据主旨进行艺术加工。',
             ),
             ChatCompletionMessage.user(
@@ -72,7 +72,7 @@ class AIContentService {
         request: CreateChatCompletionRequest(
           model: ChatCompletionModel.modelId('gpt-4o'),
           messages: [
-            ChatCompletionMessage.system(
+            const ChatCompletionMessage.system(
               content: '你是一个播客智能助手。用户正在听一期播客，请根据播客的背景信息回答他们的问题。如果信息不足，请委婉说明。',
             ),
             ChatCompletionMessage.user(

@@ -4,6 +4,7 @@ import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:audio_service/audio_service.dart';
 import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
+import '../ai_agent/ai_agent_screen.dart';
 
 class EpisodeDetailScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -30,6 +31,33 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
         _isSummarizing = false;
       });
     }
+  }
+
+  String _processDescription(String? description) {
+    if (description == null) return '';
+    // Regex to find timestamps like 12:34 or 1:23:45
+    final regExp = RegExp(r'(\d{1,2}:)?\d{1,2}:\d{2}');
+    return description.replaceAllMapped(regExp, (match) {
+      final timestamp = match.group(0)!;
+      return '<a href="seek://$timestamp">$timestamp</a>';
+    });
+  }
+
+  Duration _parseTimestamp(String timestamp) {
+    final parts = timestamp.split(':');
+    if (parts.length == 3) {
+      return Duration(
+        hours: int.parse(parts[0]),
+        minutes: int.parse(parts[1]),
+        seconds: int.parse(parts[2]),
+      );
+    } else if (parts.length == 2) {
+      return Duration(
+        minutes: int.parse(parts[0]),
+        seconds: int.parse(parts[1]),
+      );
+    }
+    return Duration.zero;
   }
 
   @override
@@ -65,14 +93,17 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    image: DecorationImage(
-                      image: NetworkImage(widget.episode.imageUrl ?? ''),
-                      fit: BoxFit.cover,
+                Hero(
+                  tag: 'episode_artwork_${widget.episode.guid}',
+                  child: Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      image: DecorationImage(
+                        image: NetworkImage(widget.episode.imageUrl ?? ''),
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
@@ -166,21 +197,49 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
             if (_isSummarizing)
               const Center(child: CircularProgressIndicator())
             else if (_aiSummary != null)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white24),
-                ),
-                child: Text(_aiSummary!, style: const TextStyle(color: Colors.white, height: 1.5)),
+              Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white24),
+                    ),
+                    child: Text(_aiSummary!, style: const TextStyle(color: Colors.white, height: 1.5)),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AIAgentScreen(episode: widget.episode)),
+                    ),
+                    icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                    label: const Text('与 AI 助手深度交流'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.tealAccent,
+                      side: const BorderSide(color: Colors.tealAccent),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    ),
+                  ),
+                ],
               ),
             const SizedBox(height: 24),
             const Text('本期节目的主要内容有：', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
             const SizedBox(height: 12),
             HtmlWidget(
-              widget.episode.description ?? '',
+              _processDescription(widget.episode.description),
+              onTapUrl: (url) {
+                if (url.startsWith('seek://')) {
+                  final timestamp = url.substring(7);
+                  final duration = _parseTimestamp(timestamp);
+                  audioHandler.seek(duration);
+                  audioHandler.play();
+                  return true;
+                }
+                return false;
+              },
               customStylesBuilder: (element) {
                 // Force white color for text and ensure backgrounds are transparent
                 // This targets the element itself and all its children by inheritance
