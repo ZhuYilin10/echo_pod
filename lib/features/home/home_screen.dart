@@ -9,6 +9,7 @@ import '../../core/models/podcast.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
 import '../player/player_screen.dart';
 import '../search/search_screen.dart';
+import '../episode_detail/episode_detail_screen.dart';
 import 'downloads_screen.dart';
 
 class HomeScreen extends ConsumerWidget {

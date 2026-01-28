@@ -22,7 +22,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final audioHandler = ref.watch(audioHandlerProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF001F1F), // Dark teal background from screenshot
+      backgroundColor:
+          const Color(0xFF001F1F), // Dark teal background from screenshot
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -32,7 +33,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         ),
         actions: [
           IconButton(icon: const Icon(Icons.star_border), onPressed: () {}),
-          IconButton(icon: const Icon(Icons.ios_share_rounded), onPressed: () {}),
+          IconButton(
+              icon: const Icon(Icons.ios_share_rounded), onPressed: () {}),
         ],
       ),
       body: Padding(
@@ -45,16 +47,21 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 40, offset: const Offset(0, 20))
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 40,
+                      offset: const Offset(0, 20))
                 ],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  widget.episode.imageUrl ?? '',
-                  width: double.infinity,
+                child: AspectRatio(
                   aspectRatio: 1,
-                  fit: BoxFit.cover,
+                  child: Image.network(
+                    widget.episode.imageUrl ?? '',
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ),
@@ -65,7 +72,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+              style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white),
             ),
             const SizedBox(height: 12),
             Row(
@@ -73,16 +83,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               children: [
                 Text(
                   widget.episode.podcastTitle,
-                  style: const TextStyle(color: Colors.tealAccent, fontSize: 16),
+                  style:
+                      const TextStyle(color: Colors.tealAccent, fontSize: 16),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.tealAccent,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text('+ 订阅', style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+                  child: const Text('+ 订阅',
+                      style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
@@ -116,17 +132,28 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   children: [
                     const Icon(Icons.radio_outlined, color: Colors.grey),
                     IconButton(
-                      icon: const Icon(Icons.replay_15, size: 36, color: Colors.white),
-                      onPressed: () => audioHandler.seek(audioHandler.playbackState.value.updatePosition - const Duration(seconds: 15)),
+                      icon: const Icon(Icons.replay_10,
+                          size: 36, color: Colors.white),
+                      onPressed: () => audioHandler.seek(
+                          audioHandler.playbackState.value.updatePosition -
+                              const Duration(seconds: 10)),
                     ),
                     IconButton(
                       iconSize: 84,
-                      icon: Icon(playing ? Icons.pause_circle_filled : Icons.play_circle_filled, color: Colors.white),
-                      onPressed: playing ? audioHandler.pause : audioHandler.play,
+                      icon: Icon(
+                          playing
+                              ? Icons.pause_circle_filled
+                              : Icons.play_circle_filled,
+                          color: Colors.white),
+                      onPressed:
+                          playing ? audioHandler.pause : audioHandler.play,
                     ),
                     IconButton(
-                      icon: const Icon(Icons.forward_30, size: 36, color: Colors.white),
-                      onPressed: () => audioHandler.seek(audioHandler.playbackState.value.updatePosition + const Duration(seconds: 30)),
+                      icon: const Icon(Icons.forward_30,
+                          size: 36, color: Colors.white),
+                      onPressed: () => audioHandler.seek(
+                          audioHandler.playbackState.value.updatePosition +
+                              const Duration(seconds: 30)),
                     ),
                     const Icon(Icons.thumb_up_alt_outlined, color: Colors.grey),
                   ],
@@ -140,7 +167,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               children: [
                 const Icon(Icons.info_outline, color: Colors.grey),
                 GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PlaylistScreen())),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const PlaylistScreen())),
                   child: Row(
                     children: [
                       const Icon(Icons.playlist_play, color: Colors.grey),
