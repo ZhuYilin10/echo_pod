@@ -11,6 +11,7 @@ import '../podcast_detail/podcast_detail_screen.dart';
 import '../search/search_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
 import 'downloads_screen.dart';
+import '../common/download_button.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -259,6 +260,8 @@ class HomeScreen extends ConsumerWidget {
                   );
                 },
               ),
+              // Download
+              DownloadButton(episode: episode, size: 24),
             ],
           );
         },
