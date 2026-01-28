@@ -135,7 +135,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.replay_15, size: 36, color: Colors.white),
+                      icon: const Icon(Icons.replay_10, size: 36, color: Colors.white),
                       onPressed: () => audioHandler.seek(audioHandler.playbackState.value.updatePosition - const Duration(seconds: 15)),
                     ),
                     const SizedBox(width: 24),
