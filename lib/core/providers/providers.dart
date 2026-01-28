@@ -103,3 +103,8 @@ final recentSubscribedEpisodesProvider =
 
   return allEpisodes.take(30).toList();
 });
+
+final trendingEpisodesProvider = FutureProvider<List<Episode>>((ref) async {
+  final podcastService = ref.watch(podcastServiceProvider);
+  return podcastService.fetchTrendingEpisodes();
+});

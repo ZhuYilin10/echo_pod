@@ -82,4 +82,32 @@ class PodcastService {
       return null;
     }
   }
+
+  Future<List<Episode>> fetchTrendingEpisodes() async {
+    try {
+      // Step 1: Get top podcasts in CN (from iTunes RSS)
+      final response = await _dio.get(
+        'https://itunes.apple.com/cn/rss/toppodcasts/limit=10/json'
+      );
+      final dynamic data = response.data is String ? jsonDecode(response.data) : response.data;
+      final entries = data['feed']['entry'] as List;
+      
+      final List<Episode> trendingEpisodes = [];
+      
+      // Step 2: For each top podcast, fetch their latest episode
+      for (final entry in entries) {
+        final String? feedUrl = entry['link']['attributes']['href'];
+        if (feedUrl != null) {
+          final episodes = await fetchEpisodes(feedUrl);
+          if (episodes.isNotEmpty) {
+            trendingEpisodes.add(episodes.first);
+          }
+        }
+      }
+      return trendingEpisodes;
+    } catch (e) {
+      print('Error fetching trending episodes: $e');
+      return [];
+    }
+  }
 }

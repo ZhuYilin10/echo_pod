@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/models/podcast.dart'; // Import Request
+import 'package:audio_service/audio_service.dart';
+import '../../core/models/podcast.dart';
+import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
 import '../search/search_screen.dart';
+import '../episode_detail/episode_detail_screen.dart';
 
 class DiscoveryScreen extends ConsumerStatefulWidget {
   const DiscoveryScreen({super.key});
@@ -18,6 +21,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
 
   final List<Map<String, dynamic>> _categories = [
     {'name': '全部', 'icon': Icons.stars_rounded, 'id': 'all'},
+    {'name': '热门单集', 'icon': Icons.whatshot_rounded, 'id': 'trending_episodes'},
     {'name': '商业', 'icon': Icons.trending_up, 'id': '1321'},
     {'name': '科技', 'icon': Icons.biotech, 'id': '1318'},
     {'name': '人文', 'icon': Icons.history_edu, 'id': '1324'},
@@ -26,10 +30,9 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     {'name': '生活', 'icon': Icons.coffee_outlined, 'id': '1302'},
   ];
 
-  // Pagination state
   final ScrollController _scrollController = ScrollController();
-  List<Podcast> _allPodcasts = [];
-  final List<Podcast> _displayedPodcasts = [];
+  List<dynamic> _allData = []; // Can be List<Podcast> or List<Episode>
+  final List<dynamic> _displayedData = [];
   bool _isLoadingMore = false;
   static const int _pageSize = 20;
 
@@ -37,23 +40,38 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    // Fetch initial data manually since ref.listen might miss the first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchInitialPodcasts();
+      _fetchInitialData();
     });
   }
 
-  void _fetchInitialPodcasts() async {
-    final podcasts = await ref.read(genrePodcastsProvider(_selectedGenreId).future);
-    if (mounted) {
-      setState(() {
-        _allPodcasts = podcasts;
-        _displayedPodcasts.clear();
-        final count = _pageSize.clamp(0, _allPodcasts.length);
-        if (count > 0) {
-          _displayedPodcasts.addAll(_allPodcasts.sublist(0, count));
-        }
-      });
+  void _fetchInitialData() async {
+    if (!mounted) return;
+    
+    if (_selectedGenreId == 'trending_episodes') {
+      final episodes = await ref.read(trendingEpisodesProvider.future);
+      if (mounted) {
+        setState(() {
+          _allData = episodes;
+          _displayedData.clear();
+          final count = _pageSize.clamp(0, _allData.length);
+          if (count > 0) {
+            _displayedData.addAll(_allData.sublist(0, count));
+          }
+        });
+      }
+    } else {
+      final podcasts = await ref.read(genrePodcastsProvider(_selectedGenreId).future);
+      if (mounted) {
+        setState(() {
+          _allData = podcasts;
+          _displayedData.clear();
+          final count = _pageSize.clamp(0, _allData.length);
+          if (count > 0) {
+            _displayedData.addAll(_allData.sublist(0, count));
+          }
+        });
+      }
     }
   }
 
@@ -71,43 +89,29 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   }
 
   Future<void> _loadMore() async {
-    if (_isLoadingMore || _displayedPodcasts.length >= _allPodcasts.length)
-      return;
+    if (_isLoadingMore || _displayedData.length >= _allData.length) return;
 
     setState(() => _isLoadingMore = true);
-
-    // Simulate network delay for smooth UX
     await Future.delayed(const Duration(milliseconds: 300));
 
-    setState(() {
-      final startIndex = _displayedPodcasts.length;
-      final endIndex = (startIndex + _pageSize).clamp(0, _allPodcasts.length);
-      if (startIndex < endIndex) {
-        _displayedPodcasts.addAll(_allPodcasts.sublist(startIndex, endIndex));
-      }
-      _isLoadingMore = false;
-    });
+    if (mounted) {
+      setState(() {
+        final startIndex = _displayedData.length;
+        final endIndex = (startIndex + _pageSize).clamp(0, _allData.length);
+        if (startIndex < endIndex) {
+          _displayedData.addAll(_allData.sublist(startIndex, endIndex));
+        }
+        _isLoadingMore = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Listen to provider changes to update our local full list
-    ref.listen(genrePodcastsProvider(_selectedGenreId), (previous, next) {
-      next.whenData((podcasts) {
-        setState(() {
-          _allPodcasts = podcasts;
-          _displayedPodcasts.clear();
-          // Initial load
-          final count = _pageSize.clamp(0, _allPodcasts.length);
-          if (count > 0) {
-            _displayedPodcasts.addAll(_allPodcasts.sublist(0, count));
-          }
-        });
-      });
-    });
-
-    // We still watch it to handle loading/error states initially
-    final podcastsAsync = ref.watch(genrePodcastsProvider(_selectedGenreId));
+    // Determine which async provider to watch
+    final AsyncValue<dynamic> dataAsync = _selectedGenreId == 'trending_episodes'
+        ? ref.watch(trendingEpisodesProvider)
+        : ref.watch(genrePodcastsProvider(_selectedGenreId));
 
     return Scaffold(
       appBar: AppBar(
@@ -136,56 +140,31 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
             ),
           ),
           Expanded(
-            child: podcastsAsync.when(
+            child: dataAsync.when(
               data: (_) {
-                if (_allPodcasts.isEmpty && _displayedPodcasts.isEmpty) {
+                if (_allData.isEmpty && _displayedData.isEmpty) {
                   return const Center(child: Text('暂无数据'));
                 }
 
                 return ListView.builder(
                   controller: _scrollController,
                   padding: EdgeInsets.zero,
-                  itemCount:
-                      _displayedPodcasts.length + (_isLoadingMore ? 1 : 0),
+                  itemCount: _displayedData.length + (_isLoadingMore ? 1 : 0),
                   itemBuilder: (context, index) {
-                    if (index == _displayedPodcasts.length) {
+                    if (index == _displayedData.length) {
                       return const Padding(
                         padding: EdgeInsets.all(16.0),
                         child: Center(child: CircularProgressIndicator()),
                       );
                     }
 
-                    final podcast = _displayedPodcasts[index];
-                    return ListTile(
-                      leading: Text(
-                        '${index + 1}',
-                        style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.deepPurpleAccent.withOpacity(0.7)),
-                      ),
-                      title: Text(podcast.title,
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
-                      subtitle: Text(podcast.artist ?? '',
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
-                      trailing: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          podcast.imageUrl ?? '',
-                          width: 45,
-                          height: 45,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.podcasts),
-                        ),
-                      ),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                PodcastDetailScreen(podcast: podcast)),
-                      ),
-                    );
+                    final item = _displayedData[index];
+                    if (item is Podcast) {
+                      return _buildPodcastTile(index, item);
+                    } else if (item is Episode) {
+                      return _buildEpisodeTile(index, item);
+                    }
+                    return const SizedBox();
                   },
                 );
               },
@@ -194,6 +173,98 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPodcastTile(int index, Podcast podcast) {
+    return ListTile(
+      leading: Text(
+        '${index + 1}',
+        style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.deepPurpleAccent.withOpacity(0.7)),
+      ),
+      title: Text(podcast.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+      subtitle: Text(podcast.artist ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+      trailing: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          podcast.imageUrl ?? '',
+          width: 45,
+          height: 45,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const Icon(Icons.podcasts),
+        ),
+      ),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => PodcastDetailScreen(podcast: podcast)),
+      ),
+    );
+  }
+
+  Widget _buildEpisodeTile(int index, Episode episode) {
+    final audioHandler = ref.watch(audioHandlerProvider);
+    return ListTile(
+      leading: Text(
+        '${index + 1}',
+        style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.tealAccent),
+      ),
+      title: Text(episode.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+      subtitle: Text(episode.podcastTitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      trailing: StreamBuilder<MediaItem?>(
+        stream: audioHandler.mediaItem,
+        builder: (context, snapshot) {
+          final isCurrent = snapshot.data?.id == episode.guid;
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.playlist_add_rounded, size: 24),
+                onPressed: () {
+                  audioHandler.addQueueItem(MediaItem(
+                    id: episode.guid,
+                    album: episode.podcastTitle,
+                    title: episode.title,
+                    artUri: episode.imageUrl != null ? Uri.parse(episode.imageUrl!) : null,
+                    extras: episode.toJson(),
+                  ));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('已加入播放列表'), duration: Duration(seconds: 1)));
+                },
+              ),
+              StreamBuilder<PlaybackState>(
+                stream: audioHandler.playbackState,
+                builder: (context, pbSnapshot) {
+                  final playing = pbSnapshot.data?.playing ?? false;
+                  return IconButton(
+                    icon: Icon(
+                      (isCurrent && playing) ? Icons.pause_circle_outline_rounded : Icons.play_circle_outline_rounded,
+                      size: 28,
+                      color: Colors.tealAccent,
+                    ),
+                    onPressed: () {
+                      if (isCurrent) {
+                        playing ? audioHandler.pause() : audioHandler.play();
+                      } else {
+                        audioHandler.playEpisode(episode);
+                      }
+                    },
+                  );
+                },
+              ),
+            ],
+          );
+        },
+      ),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => EpisodeDetailScreen(episode: episode)),
       ),
     );
   }
@@ -223,12 +294,11 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                 setState(() {
                   _selectedGenreId = cat['id'];
                   _selectedGenreName = '${cat['name']}频道';
-                  // Reset pagination
-                  _allPodcasts.clear();
-                  _displayedPodcasts.clear();
+                  _allData.clear();
+                  _displayedData.clear();
                   _isLoadingMore = false;
                 });
-                _fetchInitialPodcasts();
+                _fetchInitialData();
               },
               selectedColor: Colors.deepPurpleAccent,
               checkmarkColor: Colors.white,
