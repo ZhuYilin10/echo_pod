@@ -8,6 +8,7 @@ import '../../core/providers/providers.dart';
 import '../../services/audio/audio_handler.dart';
 import 'playlist_screen.dart';
 import '../share/share_screen.dart';
+import '../episode_detail/episode_detail_screen.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -34,6 +35,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: Colors.white),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => EpisodeDetailScreen(episode: widget.episode)),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.share_rounded, color: Colors.white),
             onPressed: () => Navigator.push(
