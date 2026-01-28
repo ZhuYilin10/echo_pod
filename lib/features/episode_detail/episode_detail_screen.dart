@@ -121,7 +121,7 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                               ),
                             IconButton(
                               icon: Icon(
-                                isBusy ? Icons.pause_circle_fill : Icons.play_circle_fill,
+                                isBusy ? Icons.pause_circle_filled : Icons.play_circle_filled,
                                 size: 48,
                                 color: Colors.white,
                               ),
