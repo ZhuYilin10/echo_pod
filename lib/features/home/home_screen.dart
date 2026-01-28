@@ -237,7 +237,6 @@ class HomeScreen extends ConsumerWidget {
                   );
                 },
               ),
-              // Play/Pause
               StreamBuilder<PlaybackState>(
                 stream: audioHandler.playbackState,
                 builder: (context, pbSnapshot) {
@@ -260,8 +259,6 @@ class HomeScreen extends ConsumerWidget {
                   );
                 },
               ),
-              // Download
-              DownloadButton(episode: episode, size: 24),
             ],
           );
         },

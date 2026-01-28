@@ -349,18 +349,6 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                           }
                         },
                       ),
-                      if (progress != null)
-                        SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                              value: progress, strokeWidth: 2),
-                        )
-                      else
-                        IconButton(
-                          icon: const Icon(Icons.download_for_offline_outlined),
-                          onPressed: () => _download(episode),
-                        ),
                     ],
                   );
                 });
