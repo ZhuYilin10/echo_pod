@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
+import 'package:audio_session/audio_session.dart';
 import 'bilibili_parser_service.dart';
 
 // --- Video Podcast State ---
@@ -99,6 +100,11 @@ class VideoPodcastController extends StateNotifier<VideoPodcastState> {
 
       // 3. Init new controller
       if (info.videoUrl == null) throw Exception("Video URL not found");
+      
+      // Ensure AudioSession is configured for background playback
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.speech());
+      
       final controller =
           VideoPlayerController.networkUrl(Uri.parse(info.videoUrl!));
       _videoController = controller;
