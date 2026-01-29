@@ -22,7 +22,7 @@ class BilibiliVideoInfo {
 
 class BilibiliParserService {
   // Replace with your Tencent Cloud SCF URL after deployment
-  static const String _scfApiUrl = 'https://service-xxxx.gz.apigw.tencentcs.com/release/parse';
+  static const String _scfApiUrl = 'https://1301934614-ecwzvhn1w2.ap-shanghai.tencentscf.com/';
   static const String _fallbackApiUrl = 'https://api.mir6.com/api/bzjiexi';
 
   Future<String> resolveShortUrl(String url) async {
@@ -54,7 +54,7 @@ class BilibiliParserService {
         });
         
         debugPrint('BilibiliParser: Requesting SCF $scfUri');
-        final response = await http.get(scfUri).timeout(const Duration(seconds: 15));
+        final response = await http.get(scfUri).timeout(const Duration(seconds: 30));
         
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
