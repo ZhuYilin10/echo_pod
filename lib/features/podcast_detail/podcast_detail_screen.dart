@@ -157,8 +157,21 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network(widget.podcast.imageUrl ?? '',
-                        fit: BoxFit.cover),
+                    if (widget.podcast.imageUrl != null &&
+                        widget.podcast.imageUrl!.isNotEmpty)
+                      Image.network(widget.podcast.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                                color: Colors.indigo.shade900,
+                                child: const Icon(Icons.podcasts,
+                                    size: 80, color: Colors.white24),
+                              ))
+                    else
+                      Container(
+                        color: Colors.indigo.shade900,
+                        child: const Icon(Icons.podcasts,
+                            size: 80, color: Colors.white24),
+                      ),
                     Container(
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
@@ -286,11 +299,23 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
         tag: 'episode_artwork_${episode.guid}',
         child: ClipRRect(
           borderRadius: BorderRadius.circular(4),
-          child: Image.network(episode.imageUrl ?? '',
-              width: 40,
-              height: 40,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const Icon(Icons.podcasts)),
+          child: (episode.imageUrl != null && episode.imageUrl!.isNotEmpty)
+              ? Image.network(episode.imageUrl!,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                        width: 40,
+                        height: 40,
+                        color: Colors.grey[800],
+                        child: const Icon(Icons.podcasts, size: 24),
+                      ))
+              : Container(
+                  width: 40,
+                  height: 40,
+                  color: Colors.grey[800],
+                  child: const Icon(Icons.podcasts, size: 24),
+                ),
         ),
       ),
       trailing: StreamBuilder<MediaItem?>(

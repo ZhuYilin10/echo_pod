@@ -100,13 +100,19 @@ class VideoPodcastController extends StateNotifier<VideoPodcastState> {
 
       // 3. Init new controller
       if (info.videoUrl == null) throw Exception("Video URL not found");
-      
+
       // Ensure AudioSession is configured for background playback
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.speech());
-      
-      final controller =
-          VideoPlayerController.networkUrl(Uri.parse(info.videoUrl!));
+
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(info.videoUrl!),
+        httpHeaders: {
+          'Referer': url,
+          'User-Agent':
+              'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+        },
+      );
       _videoController = controller;
 
       await controller.initialize();

@@ -54,15 +54,80 @@ class PodcastService {
     }
     try {
       final response = await _dio.get(feedUrl);
+      final xmlString = response.data.toString();
+
+      // Try to parse as Atom first if it looks like Atom
+      if (xmlString.contains('<feed') &&
+          xmlString.contains('http://www.w3.org/2005/Atom')) {
+        try {
+          final feed = AtomFeed.parse(xmlString);
+          return feed.items?.map((item) {
+                String? audioUrl;
+                // Find enclosure if exists
+                // Use where loop to avoid AtomLink construction lints
+                final enclosure = item.links
+                    ?.where((l) => l.rel == 'enclosure')
+                    .firstOrNull
+                    ?.href;
+
+                if (enclosure != null) {
+                  audioUrl = enclosure;
+                } else {
+                  // Fallback: Check for Bilibili/YouTube links
+                  final link = item.links
+                      ?.where((l) =>
+                          l.rel == 'alternate' ||
+                          l.rel == null) // standard link
+                      .firstOrNull
+                      ?.href;
+
+                  if (link != null &&
+                      (link.contains('bilibili.com') ||
+                          link.contains('youtube.com'))) {
+                    audioUrl = link;
+                  }
+                }
+
+                return Episode(
+                  guid: item.id ?? item.title ?? '',
+                  title: item.title ?? 'No Title',
+                  description: item.summary ?? item.content,
+                  pubDate: item.updated, // Atom uses updated or published
+                  audioUrl: audioUrl,
+                  duration:
+                      null, // Atom standard doesn't strictly have duration
+                  imageUrl: feed.logo ?? feed.icon,
+                  podcastTitle: feed.title ?? '',
+                  podcastFeedUrl: feedUrl,
+                );
+              }).toList() ??
+              [];
+        } catch (e) {
+          debugPrint('Failed to parse as Atom: $e');
+          // Fallthrough to RSS
+        }
+      }
+
       final feed = RssFeed.parse(response.data);
 
       return feed.items?.map((item) {
+            String? audioUrl = item.enclosure?.url;
+
+            // Fallback for RSS items without enclosure but with recognized video link
+            if (audioUrl == null) {
+              if (item.link != null &&
+                  (item.link!.contains('bilibili.com') ||
+                      item.link!.contains('youtube.com'))) {
+                audioUrl = item.link;
+              }
+            }
+
             return Episode(
               guid: item.guid ?? item.link ?? item.title ?? '',
               title: item.title ?? 'No Title',
               description: item.description,
               pubDate: item.pubDate,
-              audioUrl: item.enclosure?.url,
+              audioUrl: audioUrl,
               duration: item.itunes?.duration?.toString(),
               imageUrl: item.itunes?.image?.href ?? feed.image?.url,
               podcastTitle: feed.title ?? '',
@@ -70,7 +135,8 @@ class PodcastService {
             );
           }).toList() ??
           [];
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Error fetching episodes: $e');
       return [];
     }
   }
@@ -96,6 +162,24 @@ class PodcastService {
     }
     try {
       final response = await _dio.get(feedUrl);
+      final xmlString = response.data.toString();
+
+      if (xmlString.contains('<feed') &&
+          xmlString.contains('http://www.w3.org/2005/Atom')) {
+        try {
+          final feed = AtomFeed.parse(xmlString);
+          return Podcast(
+            title: feed.title ?? '未知播客',
+            artist: feed.authors?.firstOrNull?.name ?? '未知主播',
+            feedUrl: feedUrl,
+            imageUrl: feed.logo ?? feed.icon,
+            description: feed.subtitle,
+          );
+        } catch (e) {
+          debugPrint('Failed to parse Podcast Metadata as Atom: $e');
+        }
+      }
+
       final feed = RssFeed.parse(response.data);
 
       return Podcast(
@@ -105,7 +189,8 @@ class PodcastService {
         imageUrl: feed.itunes?.image?.href ?? feed.image?.url,
         description: feed.description,
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Error fetching podcast metadata: $e');
       return null;
     }
   }

@@ -468,8 +468,12 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> playEpisode(Episode episode, {bool autoPlay = true}) async {
-    // Check for Web Mode
-    if (episode.guid.startsWith('web_')) {
+    // Check for Web Mode OR Bilibili/YouTube Video Link
+    final isBilibiliVideo = episode.audioUrl != null &&
+        (episode.audioUrl!.contains('bilibili.com') ||
+            episode.audioUrl!.contains('youtube.com'));
+
+    if (episode.guid.startsWith('web_') || isBilibiliVideo) {
       _isWebMode = true;
 
       // Stop local player to release focus (but we keep the session technically)
@@ -488,13 +492,14 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
       mediaItem.add(item);
       _currentEpisode = episode;
 
-      // Load URL in WebView
+      // Load URL in WebView (Video Player)
       if (episode.audioUrl != null) {
         await _webController?.loadUrl(episode.audioUrl!);
         // NOTE: The web controller plays automatically in its logic or we can request it
         if (autoPlay) {
           // Give it a moment or rely on the web page to start?
           // Our WebView logic has `video.play()` on load.
+          await _webController?.play();
         }
       }
       return;
