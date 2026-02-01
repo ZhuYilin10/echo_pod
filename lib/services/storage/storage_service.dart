@@ -13,6 +13,7 @@ class StorageService {
   static const String _podcastSpeedsKey = 'podcast_speeds';
 
   Future<void> savePodcastSpeed(String feedUrl, double speed) async {
+    print('[SpeedLog] StorageService: Saving speed $speed for feed $feedUrl');
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_podcastSpeedsKey);
     Map<String, double> speeds = {};
@@ -22,6 +23,20 @@ class StorageService {
       } catch (_) {}
     }
     speeds[feedUrl] = speed;
+    await prefs.setString(_podcastSpeedsKey, jsonEncode(speeds));
+  }
+
+  Future<void> removePodcastSpeed(String feedUrl) async {
+    print('[SpeedLog] StorageService: Removing saved speed for feed $feedUrl');
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_podcastSpeedsKey);
+    Map<String, double> speeds = {};
+    if (raw != null) {
+      try {
+        speeds = Map<String, double>.from(jsonDecode(raw));
+      } catch (_) {}
+    }
+    speeds.remove(feedUrl);
     await prefs.setString(_podcastSpeedsKey, jsonEncode(speeds));
   }
 
@@ -42,7 +57,8 @@ class StorageService {
     final subs = await getSubscriptions();
     if (!subs.any((p) => p.feedUrl == podcast.feedUrl)) {
       subs.add(podcast);
-      await prefs.setString(_subKey, jsonEncode(subs.map((e) => e.toJson()).toList()));
+      await prefs.setString(
+          _subKey, jsonEncode(subs.map((e) => e.toJson()).toList()));
     }
   }
 
@@ -50,7 +66,8 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     final subs = await getSubscriptions();
     subs.removeWhere((p) => p.feedUrl == feedUrl);
-    await prefs.setString(_subKey, jsonEncode(subs.map((e) => e.toJson()).toList()));
+    await prefs.setString(
+        _subKey, jsonEncode(subs.map((e) => e.toJson()).toList()));
   }
 
   Future<bool> isSubscribed(String feedUrl) async {
@@ -75,7 +92,8 @@ class StorageService {
     final downloads = await getDownloadedEpisodes();
     if (!downloads.any((e) => e.guid == episode.guid)) {
       downloads.add(episode);
-      await prefs.setString(_downloadKey, jsonEncode(downloads.map((e) => e.toJson()).toList()));
+      await prefs.setString(
+          _downloadKey, jsonEncode(downloads.map((e) => e.toJson()).toList()));
     }
   }
 
@@ -83,7 +101,8 @@ class StorageService {
     final prefs = await SharedPreferences.getInstance();
     final downloads = await getDownloadedEpisodes();
     downloads.removeWhere((e) => e.guid == guid);
-    await prefs.setString(_downloadKey, jsonEncode(downloads.map((e) => e.toJson()).toList()));
+    await prefs.setString(
+        _downloadKey, jsonEncode(downloads.map((e) => e.toJson()).toList()));
   }
 
   Future<List<Episode>> getDownloadedEpisodes() async {
@@ -108,7 +127,8 @@ class StorageService {
     history.insert(0, episode);
     // Keep last 100 items
     if (history.length > 100) history.removeLast();
-    await prefs.setString(_historyKey, jsonEncode(history.map((e) => e.toJson()).toList()));
+    await prefs.setString(
+        _historyKey, jsonEncode(history.map((e) => e.toJson()).toList()));
   }
 
   Future<List<Episode>> getPlayHistory() async {
@@ -189,7 +209,8 @@ class StorageService {
     for (final podcast in subs) {
       final title = _escapeXml(podcast.title);
       final xmlUrl = _escapeXml(podcast.feedUrl);
-      buffer.writeln('    <outline text="$title" type="rss" xmlUrl="$xmlUrl" />');
+      buffer
+          .writeln('    <outline text="$title" type="rss" xmlUrl="$xmlUrl" />');
     }
     buffer.writeln('  </body>');
     buffer.writeln('</opml>');

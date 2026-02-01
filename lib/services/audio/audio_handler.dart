@@ -28,6 +28,8 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   StreamSubscription? _webSubscription;
   bool _isWebMode = false;
 
+  double _currentSpeed = 1.0;
+
   EchoPodAudioHandler(this._liveActivityService, this._storageService) {
     _player.playbackEventStream.map(_transformEvent).listen((state) {
       if (!_isWebMode) {
@@ -49,7 +51,14 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
           final savedSpeed =
               await _storageService.getPodcastSpeed(episode.podcastFeedUrl);
           if (savedSpeed != null) {
+            print(
+                '[SpeedLog] AudioHandler: Found saved speed $savedSpeed for ${episode.podcastTitle}, applying.');
             await setSpeed(savedSpeed);
+          } else {
+            // Reset to normal speed if no preference for this podcast
+            print(
+                '[SpeedLog] AudioHandler: No saved speed for ${episode.podcastTitle}, resetting to 1.0x.');
+            await setSpeed(1.0);
           }
         }
       }
@@ -90,7 +99,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
         final wallElapsedMs =
             now.difference(lastPositionUpdate!).inMilliseconds;
         final audioElapsedMs = (position - lastPosition!).inMilliseconds;
-        final expectedElapsedMs = (wallElapsedMs * _player.speed).round();
+        final expectedElapsedMs = (wallElapsedMs * _currentSpeed).round();
 
         // If audio jumped forward more than expected (allowing for some jitter)
         // threshold 300ms jitter is safe for 1 second interval
@@ -117,6 +126,15 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
           lastPositionUpdate = null;
         }
         _updateLiveActivity(_player.position);
+      }
+    });
+
+    _player.speedStream.listen((speed) {
+      // Sync back from player just in case, but usually we control it
+      if ((_currentSpeed - speed).abs() > 0.05) {
+        // Only update if significantly different, to avoid loop
+        // _currentSpeed = speed;
+        // Actually, let's keep _currentSpeed as authoritative for UI
       }
     });
 
@@ -382,8 +400,17 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> setSpeed(double speed) async {
+    print(
+        '[SpeedLog] AudioHandler.setSpeed: Setting speed to $speed (WebMode: $_isWebMode)');
     if (!_isWebMode) {
+      _currentSpeed = speed;
+      // Optimistically update UI immediately
+      playbackState.add(_transformEvent(_player.playbackEvent));
+
       await _player.setSpeed(speed);
+
+      // Update again to ensure sync (optional but safe)
+      // playbackState.add(_transformEvent(_player.playbackEvent));
     }
   }
 
@@ -601,7 +628,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
       playing: _player.playing,
       updatePosition: _player.position,
       bufferedPosition: _player.bufferedPosition,
-      speed: _player.speed,
+      speed: _currentSpeed, // Use local cache
       queueIndex: _player.currentIndex,
     );
   }
