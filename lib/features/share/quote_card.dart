@@ -42,7 +42,8 @@ class QuoteCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   boxShadow: [
-                    BoxShadow(color: Colors.deepPurple.withOpacity(0.3), blurRadius: 10)
+                    BoxShadow(
+                        color: Colors.indigo.withOpacity(0.3), blurRadius: 10)
                   ],
                 ),
                 child: ClipRRect(
@@ -50,7 +51,8 @@ class QuoteCard extends StatelessWidget {
                   child: Image.network(
                     episode.imageUrl ?? '',
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.podcasts, color: Colors.white24),
+                    errorBuilder: (_, __, ___) =>
+                        const Icon(Icons.podcasts, color: Colors.white24),
                   ),
                 ),
               ),
@@ -62,7 +64,7 @@ class QuoteCard extends StatelessWidget {
                     Text(
                       episode.podcastTitle,
                       style: GoogleFonts.notoSansSc(
-                        color: Colors.deepPurpleAccent,
+                        color: Colors.indigoAccent,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                       ),
@@ -71,7 +73,8 @@ class QuoteCard extends StatelessWidget {
                       episode.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white38, fontSize: 11),
+                      style:
+                          const TextStyle(color: Colors.white38, fontSize: 11),
                     ),
                   ],
                 ),
@@ -81,7 +84,8 @@ class QuoteCard extends StatelessWidget {
           const SizedBox(height: 48),
           const Opacity(
             opacity: 0.2,
-            child: Icon(Icons.format_quote_rounded, color: Colors.white, size: 64),
+            child:
+                Icon(Icons.format_quote_rounded, color: Colors.white, size: 64),
           ),
           const SizedBox(height: 8),
           Text(
@@ -102,7 +106,10 @@ class QuoteCard extends StatelessWidget {
                 children: [
                   Text(
                     '— EchoPod AI 精选',
-                    style: TextStyle(color: Colors.amber.shade700, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.amber.shade700,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   const Text(
@@ -113,7 +120,8 @@ class QuoteCard extends StatelessWidget {
               ),
               const Opacity(
                 opacity: 0.6,
-                child: Icon(Icons.qr_code_2_rounded, color: Colors.white, size: 40),
+                child: Icon(Icons.qr_code_2_rounded,
+                    color: Colors.white, size: 40),
               ),
             ],
           ),

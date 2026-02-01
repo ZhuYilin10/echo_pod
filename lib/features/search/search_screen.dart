@@ -77,7 +77,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.deepPurpleAccent,
+          indicatorColor: Colors.indigoAccent,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.grey,
           tabs: const [
             Tab(text: '搜频道'),
             Tab(text: '搜内容 (AI)'),
@@ -152,7 +154,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
                 const SizedBox(height: 4),
                 Text('${result.podcastTitle} · 时间点 ${result.timestamp}',
                     style: const TextStyle(
-                        color: Colors.deepPurpleAccent, fontSize: 12)),
+                        color: Colors.indigoAccent, fontSize: 12)),
                 const SizedBox(height: 8),
                 Text(result.snippet,
                     style: const TextStyle(

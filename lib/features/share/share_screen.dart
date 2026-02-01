@@ -31,7 +31,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
 
   void _generateQuote() async {
     setState(() => _isLoading = true);
-    
+
     final aiService = ref.read(aiServiceProvider);
     final result = await aiService.extractGoldenSentence(
       widget.episode.title,
@@ -54,7 +54,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
     final imagePath = await File('${directory.path}/share_quote.png').create();
     await imagePath.writeAsBytes(image);
 
-    await Share.shareXFiles([XFile(imagePath.path)], text: '来自 EchoPod AI 的金句分享');
+    await Share.shareXFiles([XFile(imagePath.path)],
+        text: '来自 EchoPod AI 的金句分享');
   }
 
   @override
@@ -80,7 +81,10 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
             end: Alignment.bottomCenter,
             colors: [
               Theme.of(context).colorScheme.surface,
-              Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+              Theme.of(context)
+                  .colorScheme
+                  .surfaceContainerHighest
+                  .withOpacity(0.5),
             ],
           ),
         ),
@@ -95,7 +99,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
                         children: [
                           CircularProgressIndicator(),
                           SizedBox(height: 20),
-                          Text('AI 正在为您打磨金句...', style: TextStyle(color: Colors.grey)),
+                          Text('AI 正在为您打磨金句...',
+                              style: TextStyle(color: Colors.grey)),
                         ],
                       )
                     : _quote != null
@@ -122,21 +127,24 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
                       label: const Text('取消'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30)),
                       ),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: (_quote != null && !_isLoading) ? _shareImage : null,
+                      onPressed:
+                          (_quote != null && !_isLoading) ? _shareImage : null,
                       icon: const Icon(Icons.share_rounded),
                       label: const Text('分享朋友圈'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurpleAccent,
+                        backgroundColor: Colors.indigoAccent,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30)),
                       ),
                     ),
                   ),

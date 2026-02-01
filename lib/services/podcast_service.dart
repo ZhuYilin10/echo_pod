@@ -3,9 +3,14 @@ import 'package:dio/dio.dart';
 import 'package:webfeed_plus/webfeed_plus.dart';
 import '../core/models/podcast.dart';
 import '../core/models/episode.dart';
+import 'package:flutter/foundation.dart';
+import 'xiaoyuzhou_parser_service.dart';
 
 class PodcastService {
   final Dio _dio = Dio();
+  final XiaoyuzhouParserService? xiaoyuzhouParser;
+
+  PodcastService({this.xiaoyuzhouParser});
 
   Future<List<Podcast>> searchPodcasts(String term, {String? genre}) async {
     try {
@@ -26,9 +31,8 @@ class PodcastService {
       );
 
       final dynamic responseData = response.data;
-      final Map<String, dynamic> data = responseData is String 
-          ? jsonDecode(responseData) 
-          : responseData;
+      final Map<String, dynamic> data =
+          responseData is String ? jsonDecode(responseData) : responseData;
       final results = data['results'] as List;
       return results.map((item) {
         return Podcast(
@@ -51,20 +55,21 @@ class PodcastService {
     try {
       final response = await _dio.get(feedUrl);
       final feed = RssFeed.parse(response.data);
-      
+
       return feed.items?.map((item) {
-        return Episode(
-          guid: item.guid ?? item.link ?? item.title ?? '',
-          title: item.title ?? 'No Title',
-          description: item.description,
-          pubDate: item.pubDate,
-          audioUrl: item.enclosure?.url,
-          duration: item.itunes?.duration?.toString(),
-          imageUrl: item.itunes?.image?.href ?? feed.image?.url,
-          podcastTitle: feed.title ?? '',
-          podcastFeedUrl: feedUrl,
-        );
-      }).toList() ?? [];
+            return Episode(
+              guid: item.guid ?? item.link ?? item.title ?? '',
+              title: item.title ?? 'No Title',
+              description: item.description,
+              pubDate: item.pubDate,
+              audioUrl: item.enclosure?.url,
+              duration: item.itunes?.duration?.toString(),
+              imageUrl: item.itunes?.image?.href ?? feed.image?.url,
+              podcastTitle: feed.title ?? '',
+              podcastFeedUrl: feedUrl,
+            );
+          }).toList() ??
+          [];
     } catch (_) {
       return [];
     }
@@ -92,7 +97,7 @@ class PodcastService {
     try {
       final response = await _dio.get(feedUrl);
       final feed = RssFeed.parse(response.data);
-      
+
       return Podcast(
         title: feed.title ?? '未知播客',
         artist: feed.itunes?.author ?? feed.author ?? '未知主播',
@@ -106,8 +111,19 @@ class PodcastService {
   }
 
   Future<Episode?> resolveEpisodeUrl(Episode episode) async {
-    if (episode.audioUrl != null && episode.audioUrl!.isNotEmpty) return episode;
-    
+    if (episode.audioUrl != null && episode.audioUrl!.isNotEmpty)
+      return episode;
+
+    // Check if the GUID is actually a Xiaoyuzhou link (common in XYZRank data)
+    if (episode.guid.contains('xiaoyuzhoufm.com') && xiaoyuzhouParser != null) {
+      try {
+        final resolved = await xiaoyuzhouParser!.parseUrl(episode.guid);
+        if (resolved != null) return resolved;
+      } catch (e) {
+        debugPrint('Xiaoyuzhou quick resolve failed: $e');
+      }
+    }
+
     // Search for the podcast to get the feed URL
     final podcasts = await searchPodcasts(episode.podcastTitle);
     if (podcasts.isNotEmpty) {
@@ -122,61 +138,34 @@ class PodcastService {
 
   Future<List<Episode>> fetchTrendingEpisodes() async {
     try {
-      // 1. Fetch iTunes Top Podcasts (CN)
-      final itunesResponse = await _dio.get(
-        'https://itunes.apple.com/cn/rss/toppodcasts/limit=50/json'
-      );
-      final dynamic itunesData = itunesResponse.data is String ? jsonDecode(itunesResponse.data) : itunesResponse.data;
-      final itunesEntries = itunesData['feed']['entry'] as List;
+      // Fetch XYZRank Hot Episodes directly from GitHub
+      final response = await _dio.get(
+          'https://raw.githubusercontent.com/eddiehe99/xyzrank/main/hot_episodes.json');
 
-      // 2. Fetch XYZRank Top Episodes
-      final xyzResponse = await _dio.get('https://xyzrank.com/api/episodes');
-      final dynamic xyzData = xyzResponse.data is String ? jsonDecode(xyzResponse.data) : xyzResponse.data;
-      final xyzItems = xyzData['items'] as List;
+      final dynamic responseData =
+          response.data is String ? jsonDecode(response.data) : response.data;
 
-      final Map<String, Episode> mergedMap = {};
-      final Map<String, double> scores = {};
+      final List<dynamic> episodesData = responseData['data']['episodes'];
 
-      // Process XYZRank (Priority 1.5x)
-      for (int i = 0; i < xyzItems.length && i < 50; i++) {
-        final item = xyzItems[i];
-        final episode = Episode(
-          guid: item['link'] ?? '',
-          title: item['title'] ?? '',
-          podcastTitle: item['podcastName'] ?? '',
+      return episodesData.map((item) {
+        return Episode(
+          guid: item['link'] ?? 'xyz_${item['title'].hashCode}',
+          title: item['title'] ?? 'Unknown Title',
+          podcastTitle: item['podcastName'] ?? 'Unknown Podcast',
           imageUrl: item['logoURL'],
-          podcastFeedUrl: '', // Will need to resolve if played
+          description: 'Play count: ${item['playCount']}',
+          // These episodes lack direct audio/feed URLs, so they will need resolution
+          // when the user tries to play them.
+          podcastFeedUrl: '',
+          audioUrl: null,
+          pubDate: item['postTime'] != null
+              ? DateTime.tryParse(item['postTime'])
+              : null,
+          duration: item['duration']?.toString(),
         );
-        mergedMap[episode.title] = episode;
-        scores[episode.title] = (50 - i) * 1.5;
-      }
-
-      // Process iTunes (Priority 1.0x)
-      for (int i = 0; i < itunesEntries.length; i++) {
-        final entry = itunesEntries[i];
-        final String? feedUrl = entry['link']['attributes']['href'];
-        
-        if (i < 10 && feedUrl != null) {
-          final episodes = await fetchEpisodes(feedUrl);
-          if (episodes.isNotEmpty) {
-            final ep = episodes.first;
-            if (mergedMap.containsKey(ep.title)) {
-              scores[ep.title] = (scores[ep.title] ?? 0) + (50 - i);
-            } else {
-              mergedMap[ep.title] = ep;
-              scores[ep.title] = (50 - i).toDouble();
-            }
-          }
-        }
-      }
-
-      // Sort by score
-      final sortedTitles = scores.keys.toList()
-        ..sort((a, b) => scores[b]!.compareTo(scores[a]!));
-
-      return sortedTitles.take(50).map((t) => mergedMap[t]!).toList();
+      }).toList();
     } catch (e) {
-      print('Error fetching weighted trending episodes: $e');
+      debugPrint('Error fetching trending episodes: $e');
       return [];
     }
   }

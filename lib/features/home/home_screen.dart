@@ -19,7 +19,7 @@ class HomeScreen extends ConsumerWidget {
   void _exportOpml(BuildContext context, WidgetRef ref) async {
     final storage = ref.read(storageServiceProvider);
     final opmlContent = await storage.exportToOpml();
-    
+
     final directory = await getTemporaryDirectory();
     final file = File('${directory.path}/echopod_subs.opml');
     await file.writeAsString(opmlContent);
@@ -42,7 +42,8 @@ class HomeScreen extends ConsumerWidget {
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: const Text('取消')),
           ElevatedButton(
             onPressed: () async {
               final url = controller.text.trim();
@@ -61,7 +62,7 @@ class HomeScreen extends ConsumerWidget {
       BuildContext context, WidgetRef ref, String url) async {
     ScaffoldMessenger.of(context)
         .showSnackBar(const SnackBar(content: Text('正在解析订阅地址...')));
-    
+
     String finalUrl = url;
     // Bilibili link detection
     if (url.contains('bilibili.com/')) {
@@ -72,21 +73,23 @@ class HomeScreen extends ConsumerWidget {
         finalUrl = 'echopod://bilibili/user/$uid';
       }
     }
-    
+
     final podcastService = ref.read(podcastServiceProvider);
     final storageService = ref.read(storageServiceProvider);
     final podcast = await podcastService.fetchPodcastMetadata(finalUrl);
-    
+
     if (podcast != null) {
       await storageService.subscribe(podcast);
       ref.invalidate(subscriptionsProvider);
       ref.invalidate(recentSubscribedEpisodesProvider);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('订阅成功: ${podcast.title}')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('订阅成功: ${podcast.title}')));
       }
     } else {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('无法解析该地址，请检查格式是否正确')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('无法解析该地址，请检查格式是否正确')));
       }
     }
   }
@@ -102,15 +105,21 @@ class HomeScreen extends ConsumerWidget {
         centerTitle: false,
         leading: IconButton(
           icon: const Icon(Icons.download_for_offline_rounded),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const DownloadsScreen())),
+          onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (context) => const DownloadsScreen())),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.search_rounded),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SearchScreen())),
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (context) => const SearchScreen())),
           ),
-          IconButton(icon: const Icon(Icons.add_link_rounded), onPressed: () => _showAddRssDialog(context, ref)),
-          IconButton(icon: const Icon(Icons.output_rounded), onPressed: () => _exportOpml(context, ref)),
+          IconButton(
+              icon: const Icon(Icons.add_link_rounded),
+              onPressed: () => _showAddRssDialog(context, ref)),
+          IconButton(
+              icon: const Icon(Icons.output_rounded),
+              onPressed: () => _exportOpml(context, ref)),
         ],
       ),
       body: RefreshIndicator(
@@ -124,26 +133,31 @@ class HomeScreen extends ConsumerWidget {
             SliverToBoxAdapter(
               child: _buildSubscribedChannels(context, subsAsync),
             ),
-            
+
             const SliverPadding(
               padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
               sliver: SliverToBoxAdapter(
-                child: Text('最新单集', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: Text('最新单集',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ),
 
             // Recent Episodes Vertical List (Main area)
             recentAsync.when(
-              data: (episodes) => episodes.isEmpty 
-                ? _buildEmptyStateSliver(context)
-                : SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => _buildEpisodeItem(context, ref, episodes[index]),
-                      childCount: episodes.length,
+              data: (episodes) => episodes.isEmpty
+                  ? _buildEmptyStateSliver(context)
+                  : SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) =>
+                            _buildEpisodeItem(context, ref, episodes[index]),
+                        childCount: episodes.length,
+                      ),
                     ),
-                  ),
-              loading: () => const SliverFillRemaining(child: Center(child: CircularProgressIndicator())),
-              error: (e, s) => SliverFillRemaining(child: Center(child: Text('加载失败: $e'))),
+              loading: () => const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator())),
+              error: (e, s) =>
+                  SliverFillRemaining(child: Center(child: Text('加载失败: $e'))),
             ),
           ],
         ),
@@ -151,13 +165,18 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSubscribedChannels(BuildContext context, AsyncValue<List<Podcast>> subsAsync) {
+  Widget _buildSubscribedChannels(
+      BuildContext context, AsyncValue<List<Podcast>> subsAsync) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text('我的订阅', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
+          child: Text('我的订阅',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey)),
         ),
         SizedBox(
           height: 100,
@@ -169,7 +188,11 @@ class HomeScreen extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final podcast = subs[index];
                 return GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => PodcastDetailScreen(podcast: podcast))),
+                  onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              PodcastDetailScreen(podcast: podcast))),
                   child: Container(
                     width: 70,
                     margin: const EdgeInsets.only(right: 12),
@@ -177,10 +200,18 @@ class HomeScreen extends ConsumerWidget {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.network(podcast.imageUrl ?? '', width: 60, height: 60, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.podcasts)),
+                          child: Image.network(podcast.imageUrl ?? '',
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                                  const Icon(Icons.podcasts)),
                         ),
                         const SizedBox(height: 4),
-                        Text(podcast.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10)),
+                        Text(podcast.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 10)),
                       ],
                     ),
                   ),
@@ -195,7 +226,8 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEpisodeItem(BuildContext context, WidgetRef ref, Episode episode) {
+  Widget _buildEpisodeItem(
+      BuildContext context, WidgetRef ref, Episode episode) {
     final audioHandler = ref.watch(audioHandlerProvider);
 
     return ListTile(
@@ -247,7 +279,9 @@ class HomeScreen extends ConsumerWidget {
                     extras: episode.toJson(),
                   ));
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('已加入播放列表'), duration: Duration(seconds: 1)),
+                    const SnackBar(
+                        content: Text('已加入播放列表'),
+                        duration: Duration(seconds: 1)),
                   );
                 },
               ),
@@ -261,7 +295,7 @@ class HomeScreen extends ConsumerWidget {
                           ? Icons.pause_circle_outline_rounded
                           : Icons.play_circle_outline_rounded,
                       size: 28,
-                      color: Colors.deepPurpleAccent,
+                      color: Colors.indigoAccent,
                     ),
                     onPressed: () {
                       if (isCurrent) {

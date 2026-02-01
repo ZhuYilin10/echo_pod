@@ -31,8 +31,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   ];
 
   final ScrollController _scrollController = ScrollController();
-  List<dynamic> _allData = []; // Can be List<Podcast> or List<Episode>
-  final List<dynamic> _displayedData = [];
+  int _displayCount = 20;
   bool _isLoadingMore = false;
   static const int _pageSize = 20;
 
@@ -40,40 +39,6 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchInitialData();
-    });
-  }
-
-  void _fetchInitialData() async {
-    if (!mounted) return;
-
-    if (_selectedGenreId == 'trending_episodes') {
-      final episodes = await ref.read(trendingEpisodesProvider.future);
-      if (mounted) {
-        setState(() {
-          _allData = episodes;
-          _displayedData.clear();
-          final count = _pageSize.clamp(0, _allData.length);
-          if (count > 0) {
-            _displayedData.addAll(_allData.sublist(0, count));
-          }
-        });
-      }
-    } else {
-      final podcasts =
-          await ref.read(genrePodcastsProvider(_selectedGenreId).future);
-      if (mounted) {
-        setState(() {
-          _allData = podcasts;
-          _displayedData.clear();
-          final count = _pageSize.clamp(0, _allData.length);
-          if (count > 0) {
-            _displayedData.addAll(_allData.sublist(0, count));
-          }
-        });
-      }
-    }
   }
 
   @override
@@ -135,22 +100,40 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     );
   }
 
-  void _handleWebUrl(String input) {
+  void _handleWebUrl(String input) async {
     // Smart Link Extraction
     final urlRegExp = RegExp(
         r'((https?:\/\/)[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?)',
         caseSensitive: false);
     final match = urlRegExp.firstMatch(input);
-    
+
     if (match == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('未发现有效链接')),
       );
       return;
     }
-    
+
     final url = match.group(0)!;
-    
+
+    // Special handling for Xiaoyuzhou
+    if (url.contains('xiaoyuzhoufm.com')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('正在解析小宇宙音频...')),
+      );
+      final episode =
+          await ref.read(xiaoyuzhouParserServiceProvider).parseUrl(url);
+      if (episode != null) {
+        ref.read(audioHandlerProvider).playEpisode(episode);
+        return;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('解析小宇宙音频失败，请尝试其他链接')),
+        );
+      }
+      return;
+    }
+
     // Extract potential title from bracketed text 【...】
     String title = '网页音频解析中...';
     final titleRegExp = RegExp(r'【([^】]+)】');
@@ -177,18 +160,25 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   }
 
   Future<void> _loadMore() async {
-    if (_isLoadingMore || _displayedData.length >= _allData.length) return;
+    if (_isLoadingMore) return;
+
+    final provider = _selectedGenreId == 'trending_episodes'
+        ? trendingEpisodesProvider
+        : genrePodcastsProvider(_selectedGenreId);
+
+    final asyncValue = ref.read(provider);
+
+    if (!asyncValue.hasValue) return;
+
+    final fullList = asyncValue.value as List;
+    if (_displayCount >= fullList.length) return;
 
     setState(() => _isLoadingMore = true);
     await Future.delayed(const Duration(milliseconds: 300));
 
     if (mounted) {
       setState(() {
-        final startIndex = _displayedData.length;
-        final endIndex = (startIndex + _pageSize).clamp(0, _allData.length);
-        if (startIndex < endIndex) {
-          _displayedData.addAll(_allData.sublist(startIndex, endIndex));
-        }
+        _displayCount += _pageSize;
         _isLoadingMore = false;
       });
     }
@@ -236,24 +226,29 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
           ),
           Expanded(
             child: dataAsync.when(
-              data: (_) {
-                if (_allData.isEmpty && _displayedData.isEmpty) {
+              data: (data) {
+                final list = data is List ? data : [];
+
+                if (list.isEmpty) {
                   return const Center(child: Text('暂无数据'));
                 }
+
+                final count = _displayCount.clamp(0, list.length);
+                final displayedData = list.sublist(0, count);
 
                 return ListView.builder(
                   controller: _scrollController,
                   padding: EdgeInsets.zero,
-                  itemCount: _displayedData.length + (_isLoadingMore ? 1 : 0),
+                  itemCount: displayedData.length + (_isLoadingMore ? 1 : 0),
                   itemBuilder: (context, index) {
-                    if (index == _displayedData.length) {
+                    if (index == displayedData.length) {
                       return const Padding(
                         padding: EdgeInsets.all(16.0),
                         child: Center(child: CircularProgressIndicator()),
                       );
                     }
 
-                    final item = _displayedData[index];
+                    final item = displayedData[index];
                     if (item is Podcast) {
                       return _buildPodcastTile(index, item);
                     } else if (item is Episode) {
@@ -279,7 +274,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.deepPurpleAccent.withOpacity(0.7)),
+            color: Colors.indigoAccent.withOpacity(0.7)),
       ),
       title: Text(podcast.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(podcast.artist ?? '',
@@ -305,12 +300,38 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
   Widget _buildEpisodeTile(int index, Episode episode) {
     final audioHandler = ref.watch(audioHandlerProvider);
     return ListTile(
-      leading: Text(
-        '${index + 1}',
-        style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.tealAccent),
+      leading: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 30,
+            child: Text(
+              '${index + 1}',
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.tealAccent),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(width: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Image.network(
+              episode.imageUrl ?? '',
+              width: 45,
+              height: 45,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                width: 45,
+                height: 45,
+                color: Colors.grey.withOpacity(0.2),
+                child: const Icon(Icons.music_note, color: Colors.white54),
+              ),
+            ),
+          ),
+        ],
       ),
       title: Text(episode.title,
           maxLines: 2,
@@ -441,20 +462,18 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
               label: Text(cat['name']),
               avatar: Icon(cat['icon'],
                   size: 16,
-                  color: isSelected ? Colors.white : Colors.deepPurpleAccent),
+                  color: isSelected ? Colors.white : Colors.indigoAccent),
               selected: isSelected,
               onSelected: (selected) {
                 if (_selectedGenreId == cat['id']) return;
                 setState(() {
                   _selectedGenreId = cat['id'];
                   _selectedGenreName = '${cat['name']}频道';
-                  _allData.clear();
-                  _displayedData.clear();
+                  _displayCount = _pageSize;
                   _isLoadingMore = false;
                 });
-                _fetchInitialData();
               },
-              selectedColor: Colors.deepPurpleAccent,
+              selectedColor: Colors.indigoAccent,
               checkmarkColor: Colors.white,
               labelStyle:
                   TextStyle(color: isSelected ? Colors.white : Colors.white70),

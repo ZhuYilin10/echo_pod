@@ -11,11 +11,14 @@ import '../../services/platform/live_activity_service.dart';
 
 import '../../services/download/download_service.dart';
 import '../../services/semantic_search_service.dart';
+import '../../services/xiaoyuzhou_parser_service.dart';
 
 import '../../services/platform/widget_service.dart';
 import '../../services/platform/widget_content_manager.dart';
 
-final podcastServiceProvider = Provider((ref) => PodcastService());
+final podcastServiceProvider = Provider((ref) => PodcastService(
+      xiaoyuzhouParser: ref.watch(xiaoyuzhouParserServiceProvider),
+    ));
 final storageServiceProvider = Provider((ref) => StorageService());
 final discoveryServiceProvider = Provider((ref) => DiscoveryService());
 final downloadServiceProvider = Provider((ref) => DownloadService());
@@ -25,6 +28,8 @@ final activeDownloadsProvider = StreamProvider<Map<String, double>>((ref) {
 });
 final semanticSearchServiceProvider =
     Provider((ref) => SemanticSearchService());
+final xiaoyuzhouParserServiceProvider =
+    Provider((ref) => XiaoyuzhouParserService());
 final widgetServiceProvider = Provider((ref) => WidgetService());
 
 final widgetContentManagerProvider = Provider((ref) => WidgetContentManager(

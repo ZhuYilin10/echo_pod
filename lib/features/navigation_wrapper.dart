@@ -45,7 +45,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
-        selectedItemColor: Colors.deepPurpleAccent,
+        selectedItemColor: Colors.indigoAccent,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: '我的'),
           BottomNavigationBarItem(

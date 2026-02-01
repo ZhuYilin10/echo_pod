@@ -14,10 +14,10 @@ late EchoPodAudioHandler _audioHandler;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   final liveActivityService = LiveActivityService();
   final storageService = StorageService();
-  
+
   _audioHandler = await AudioService.init(
     builder: () => EchoPodAudioHandler(liveActivityService, storageService),
     config: const AudioServiceConfig(
@@ -46,12 +46,12 @@ class EchoPodApp extends StatelessWidget {
       title: 'EchoPod AI',
       debugShowCheckedModeBanner: false,
       theme: FlexThemeData.light(
-        scheme: FlexScheme.deepPurple,
+        scheme: FlexScheme.indigo,
         useMaterial3: true,
         textTheme: GoogleFonts.interTextTheme(),
       ),
       darkTheme: FlexThemeData.dark(
-        scheme: FlexScheme.deepPurple,
+        scheme: FlexScheme.indigo,
         useMaterial3: true,
         surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
         blendLevel: 13,

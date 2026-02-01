@@ -20,7 +20,8 @@ class PlaylistScreen extends ConsumerWidget {
         builder: (context, snapshot) {
           final queue = snapshot.data ?? [];
           if (queue.isEmpty) {
-            return const Center(child: Text('播放列表空空如也', style: TextStyle(color: Colors.grey)));
+            return const Center(
+                child: Text('播放列表空空如也', style: TextStyle(color: Colors.grey)));
           }
 
           return ListView.builder(
@@ -33,18 +34,24 @@ class PlaylistScreen extends ConsumerWidget {
               return ListTile(
                 leading: ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: Image.network(item.artUri.toString(), width: 40, height: 40, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.podcasts)),
+                  child: Image.network(item.artUri.toString(),
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.podcasts)),
                 ),
                 title: Text(
                   item.title,
                   style: TextStyle(
-                    color: isCurrent ? Colors.deepPurpleAccent : Colors.white,
+                    color: isCurrent ? Colors.indigoAccent : Colors.white,
                     fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
-                subtitle: Text(item.album ?? '', style: const TextStyle(fontSize: 12)),
+                subtitle: Text(item.album ?? '',
+                    style: const TextStyle(fontSize: 12)),
                 trailing: IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                  icon: const Icon(Icons.remove_circle_outline,
+                      color: Colors.redAccent),
                   onPressed: () => audioHandler.removeQueueItemAt(index),
                 ),
                 onTap: () => audioHandler.skipToQueueItem(index),

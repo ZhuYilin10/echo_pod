@@ -21,7 +21,8 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
     super.initState();
     _messages.add({
       'role': 'ai',
-      'text': '你好！我是 EchoPod AI 助手。关于这期《${widget.episode.title}》，你想了解什么？你可以问我关键观点、提到的书籍或者嘉宾信息。'
+      'text':
+          '你好！我是 EchoPod AI 助手。关于这期《${widget.episode.title}》，你想了解什么？你可以问我关键观点、提到的书籍或者嘉宾信息。'
     });
   }
 
@@ -66,20 +67,24 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
                 final msg = _messages[index];
                 final isUser = msg['role'] == 'user';
                 return Align(
-                  alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment:
+                      isUser ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isUser 
-                          ? Colors.deepPurple 
-                          : Colors.grey[800],
+                      color: isUser ? Colors.indigo : Colors.grey[800],
                       borderRadius: BorderRadius.circular(16).copyWith(
-                        bottomRight: isUser ? const Radius.circular(0) : const Radius.circular(16),
-                        bottomLeft: isUser ? const Radius.circular(16) : const Radius.circular(0),
+                        bottomRight: isUser
+                            ? const Radius.circular(0)
+                            : const Radius.circular(16),
+                        bottomLeft: isUser
+                            ? const Radius.circular(16)
+                            : const Radius.circular(0),
                       ),
                     ),
-                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                    constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.75),
                     child: Text(
                       msg['text']!,
                       style: const TextStyle(color: Colors.white),
@@ -121,7 +126,7 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.send_rounded, color: Colors.deepPurpleAccent),
+              icon: const Icon(Icons.send_rounded, color: Colors.indigoAccent),
               onPressed: _sendMessage,
             ),
           ],

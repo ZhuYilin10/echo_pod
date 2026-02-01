@@ -210,7 +210,7 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isSubscribed
                                   ? Colors.grey[800]
-                                  : Colors.deepPurple,
+                                  : Colors.indigo,
                               foregroundColor: Colors.white,
                             ),
                             child: Text(isSubscribed ? '已订阅' : '订阅'),
@@ -335,7 +335,7 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                               : Icons.play_circle_outline,
                           size: 28,
                         ),
-                        color: Colors.deepPurple,
+                        color: Colors.indigoAccent,
                         onPressed: () {
                           final handler = ref.read(audioHandlerProvider);
                           if (isSameEpisode) {
