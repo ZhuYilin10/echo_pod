@@ -92,7 +92,7 @@ class VideoPodcastController extends StateNotifier<VideoPodcastState> {
         duration: Duration.zero,
       );
 
-      // 1. Parse URL
+      // 1. Parse URL (now returns H.264/AVC stream from official API)
       final info = await _parser.parse(url);
 
       // 2. Dispose old controller
@@ -108,7 +108,7 @@ class VideoPodcastController extends StateNotifier<VideoPodcastState> {
       final controller = VideoPlayerController.networkUrl(
         Uri.parse(info.videoUrl!),
         httpHeaders: {
-          'Referer': url,
+          'Referer': 'https://www.bilibili.com/',
           'User-Agent':
               'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
         },

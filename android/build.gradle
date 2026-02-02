@@ -8,9 +8,32 @@ allprojects {
 rootProject.buildDir = "../build"
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
-}
-subprojects {
     project.evaluationDependsOn(":app")
+
+    def configureAndroidInfo = { p ->
+        if (p.hasProperty("android")) {
+            try {
+                p.android {
+                    if (namespace == null) {
+                        namespace p.group
+                    }
+                    if (compileSdkVersion == null) {
+                        compileSdkVersion 34
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore if properties cannot be set
+            }
+        }
+    }
+
+    if (project.state.executed) {
+        configureAndroidInfo(project)
+    } else {
+        project.afterEvaluate { p ->
+            configureAndroidInfo(p)
+        }
+    }
 }
 
 tasks.register("clean", Delete) {
