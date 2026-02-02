@@ -39,7 +39,6 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
 
   String _processDescription(String? description) {
     if (description == null) return '';
-    // Regex to find timestamps like 12:34 or 1:23:45
     final regExp = RegExp(r'(\d{1,2}:)?\d{1,2}:\d{2}');
     return description.replaceAllMapped(regExp, (match) {
       final timestamp = match.group(0)!;
@@ -66,11 +65,6 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
 
   void _navigateToPodcastDetail() async {
     final podcastService = ref.read(podcastServiceProvider);
-    // Note: widget.episode.audioUrl is used to identify the feed if needed,
-    // but we usually need the feedUrl.
-    // For now, we search by podcastTitle to find the best match or if we had feedUrl in Episode model.
-    // In EchoPod, we might need to add feedUrl to Episode model for better accuracy.
-    // As a fallback, we'll try to find it in subscriptions or search.
     final subs = await ref.read(subscriptionsProvider.future);
     final existing =
         subs.where((p) => p.title == widget.episode.podcastTitle).firstOrNull;
@@ -83,7 +77,6 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                 builder: (context) => PodcastDetailScreen(podcast: existing)));
       }
     } else {
-      // Search for the podcast to get its metadata/feedUrl
       final results =
           await podcastService.searchPodcasts(widget.episode.podcastTitle);
       if (results.isNotEmpty && mounted) {
@@ -99,15 +92,16 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final audioHandler = ref.watch(audioHandlerProvider);
+    final colorScheme = Theme.of(context).colorScheme;
     final isSubscribedAsync = ref.watch(subscriptionsProvider).whenData(
         (subs) => subs.any((p) => p.title == widget.episode.podcastTitle));
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: colorScheme.surface,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
@@ -127,14 +121,14 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                             isSubscribedProvider(results.first.feedUrl));
                       }
                     },
-              icon: Icon(isSubscribed ? Icons.check : Icons.add, size: 18),
-              label: Text(isSubscribed ? '已订阅' : '订阅'),
-              style: TextButton.styleFrom(
-                backgroundColor: isSubscribed
-                    ? Colors.white10
-                    : Colors.teal.withOpacity(0.1),
-                foregroundColor:
-                    isSubscribed ? Colors.white70 : Colors.tealAccent,
+              icon: Icon(isSubscribed ? Icons.check : Icons.add,
+                  size: 18, color: const Color(0xFF1C1B1F)),
+              label: Text(isSubscribed ? '已订阅' : '订阅',
+                  style: const TextStyle(color: Color(0xFF1C1B1F))),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF1C1B1F)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
             ),
             loading: () => const SizedBox(
@@ -144,7 +138,7 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
             error: (_, __) => const SizedBox(),
           ),
           const SizedBox(width: 8),
-          DownloadButton(episode: widget.episode, color: Colors.white),
+          DownloadButton(episode: widget.episode),
           const SizedBox(width: 16),
         ],
       ),
@@ -184,10 +178,10 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                         ),
                         child: Text(
                           widget.episode.title,
-                          style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -195,8 +189,10 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                         onTap: _navigateToPodcastDetail,
                         child: Text(
                           '${widget.episode.podcastTitle} >',
-                          style: const TextStyle(
-                              color: Colors.tealAccent, fontSize: 14),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: colorScheme.primary),
                         ),
                       ),
                     ],
@@ -223,7 +219,7 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                                   value: _calculateProgress(
                                       playbackSnapshot.data, snapshot.data),
                                   strokeWidth: 2,
-                                  color: Colors.tealAccent,
+                                  color: colorScheme.primary,
                                 ),
                               ),
                             IconButton(
@@ -232,7 +228,6 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                                     ? Icons.pause_circle_filled
                                     : Icons.play_circle_filled,
                                 size: 48,
-                                color: Colors.white,
                               ),
                               onPressed: () {
                                 if (isCurrent) {
@@ -255,12 +250,12 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
             const SizedBox(height: 24),
             Row(
               children: [
-                const Icon(Icons.timer_outlined,
-                    size: 16, color: Colors.tealAccent),
+                Icon(Icons.timer_outlined,
+                    size: 16, color: colorScheme.primary),
                 const SizedBox(width: 4),
                 Text(
                   '${_formatDuration(widget.episode.duration)} · ${widget.episode.pubDate?.year}/${widget.episode.pubDate?.month}/${widget.episode.pubDate?.day}',
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
@@ -271,8 +266,6 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                 icon: const Icon(Icons.auto_awesome, size: 18),
                 label: const Text('总结单集'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20)),
                 ),
@@ -288,13 +281,12 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white24),
+                      border: Border.all(color: colorScheme.outline),
                     ),
                     child: Text(_aiSummary!,
-                        style:
-                            const TextStyle(color: Colors.white, height: 1.5)),
+                        style: Theme.of(context).textTheme.bodyMedium),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
@@ -307,8 +299,6 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                     icon: const Icon(Icons.chat_bubble_outline, size: 18),
                     label: const Text('与 AI 助手深度交流'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.tealAccent,
-                      side: const BorderSide(color: Colors.tealAccent),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20)),
                     ),
@@ -316,11 +306,11 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                 ],
               ),
             const SizedBox(height: 24),
-            const Text('本期节目的主要内容有：',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.white)),
+            Text('本期节目的主要内容有：',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             HtmlWidget(
               _processDescription(widget.episode.description),
@@ -335,16 +325,17 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                 return false;
               },
               customStylesBuilder: (element) {
-                // Force white color for text and ensure backgrounds are transparent
-                // This targets the element itself and all its children by inheritance
                 return {
-                  'color': 'white',
+                  'color': colorScheme.brightness == Brightness.dark
+                      ? 'white'
+                      : 'black',
                   'background-color': 'transparent',
                   'font-weight': 'normal',
                 };
               },
-              textStyle: const TextStyle(
-                  height: 1.8, color: Colors.white, fontSize: 15),
+              textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    height: 1.8,
+                  ),
             ),
           ],
         ),

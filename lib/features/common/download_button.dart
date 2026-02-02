@@ -37,7 +37,8 @@ class _DownloadButtonState extends ConsumerState<DownloadButton> {
         if (isDownloaded) {
           return IconButton(
             icon: Icon(Icons.download_done_rounded,
-                color: widget.color ?? Colors.tealAccent, size: widget.size),
+                color: widget.color ?? Theme.of(context).colorScheme.primary,
+                size: widget.size),
             onPressed: () => _handleDelete(context),
             tooltip: '已下载 (点击删除)',
           );
@@ -58,7 +59,7 @@ class _DownloadButtonState extends ConsumerState<DownloadButton> {
             child: CircularProgressIndicator(
               value: progress,
               strokeWidth: 2,
-              color: widget.color ?? Colors.tealAccent,
+              color: widget.color ?? Theme.of(context).colorScheme.primary,
             ),
           );
         }
@@ -76,7 +77,8 @@ class _DownloadButtonState extends ConsumerState<DownloadButton> {
 
         return IconButton(
           icon: Icon(Icons.download_rounded,
-              color: widget.color ?? Colors.white, size: widget.size),
+              color: widget.color ?? const Color(0xFF1C1B1F),
+              size: widget.size),
           onPressed: _handleDownload,
           tooltip: '下载',
         );

@@ -28,7 +28,7 @@ class MiniPlayer extends ConsumerWidget {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.shadow.withOpacity(0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -124,8 +124,7 @@ class MiniPlayer extends ConsumerWidget {
                                 if (mediaItem.id.startsWith('web_'))
                                   const Padding(
                                     padding: EdgeInsets.only(right: 6),
-                                    child: Icon(Icons.ondemand_video,
-                                        size: 16, color: Colors.redAccent),
+                                    child: Icon(Icons.ondemand_video, size: 16),
                                   ),
                                 Expanded(
                                   child: Text(

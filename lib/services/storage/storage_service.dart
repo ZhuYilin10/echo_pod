@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/models/episode.dart';
 import '../../core/models/podcast.dart';
+import '../../core/theme/theme_config.dart';
 
 class StorageService {
   static const String _subKey = 'subscriptions';
@@ -11,6 +12,7 @@ class StorageService {
   static const String _timeSavedKey = 'total_time_saved';
   static const String _skipSilenceKey = 'skip_silence_enabled';
   static const String _podcastSpeedsKey = 'podcast_speeds';
+  static const String _themeKey = 'app_theme_config';
 
   Future<void> savePodcastSpeed(String feedUrl, double speed) async {
     print('[SpeedLog] StorageService: Saving speed $speed for feed $feedUrl');
@@ -224,5 +226,23 @@ class StorageService {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&apos;');
+  }
+
+  // 主题配置持久化
+  Future<void> saveTheme(AppThemeConfig theme) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeKey, jsonEncode(theme.toJson()));
+  }
+
+  Future<AppThemeConfig?> loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_themeKey);
+    if (raw == null) return null;
+    try {
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      return AppThemeConfig.fromJson(json);
+    } catch (e) {
+      return null;
+    }
   }
 }

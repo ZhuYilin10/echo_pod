@@ -77,9 +77,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.indigoAccent,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.grey,
           tabs: const [
             Tab(text: '搜频道'),
             Tab(text: '搜内容 (AI)'),
@@ -144,7 +141,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
         final result = _contentResults[index];
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: Colors.grey[900],
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           child: ListTile(
             title: Text(result.episodeTitle,
                 style: const TextStyle(fontWeight: FontWeight.bold)),
@@ -153,8 +150,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
               children: [
                 const SizedBox(height: 4),
                 Text('${result.podcastTitle} · 时间点 ${result.timestamp}',
-                    style: const TextStyle(
-                        color: Colors.indigoAccent, fontSize: 12)),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary)),
                 const SizedBox(height: 8),
                 Text(result.snippet,
                     style: const TextStyle(

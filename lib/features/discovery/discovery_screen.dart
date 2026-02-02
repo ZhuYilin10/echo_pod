@@ -59,32 +59,29 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text('万物皆可播 (实验室)',
-            style: TextStyle(color: Colors.tealAccent, fontSize: 18)),
+        title: Text('万物皆可播 (实验室)',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(color: Theme.of(context).colorScheme.primary)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('支持粘贴 Bilibili/YouTube 等网页链接，直接作为音频收听',
-                style: TextStyle(color: Colors.white70, fontSize: 12)),
+            Text('支持粘贴 Bilibili/YouTube 等网页链接，直接作为音频收听',
+                style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
-              style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 hintText: '粘贴视频网页链接...',
-                hintStyle: TextStyle(color: Colors.white24),
-                enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white24)),
               ),
             ),
           ],
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('取消', style: TextStyle(color: Colors.white54))),
+              onPressed: () => Navigator.pop(context), child: const Text('取消')),
           ElevatedButton(
             onPressed: () {
               final url = controller.text.trim();
@@ -92,8 +89,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
               Navigator.pop(context);
               _handleWebUrl(url);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.tealAccent),
-            child: const Text('开始收听', style: TextStyle(color: Colors.black)),
+            child: const Text('开始收听'),
           ),
         ],
       ),
@@ -198,8 +194,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.auto_awesome_rounded,
-                color: Colors.tealAccent),
+            icon: const Icon(Icons.auto_awesome_rounded),
             tooltip: '万物皆可播 (实验室)',
             onPressed: () => _showWebAudioDialog(context),
           ),
@@ -274,7 +269,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
         style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.indigoAccent.withOpacity(0.7)),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.7)),
       ),
       title: Text(podcast.title, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(podcast.artist ?? '',
@@ -308,10 +303,10 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
             width: 30,
             child: Text(
               '${index + 1}',
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.tealAccent),
+                  color: Theme.of(context).colorScheme.primary),
               textAlign: TextAlign.center,
             ),
           ),
@@ -326,8 +321,8 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
               errorBuilder: (_, __, ___) => Container(
                 width: 45,
                 height: 45,
-                color: Colors.grey.withOpacity(0.2),
-                child: const Icon(Icons.music_note, color: Colors.white54),
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: const Icon(Icons.music_note),
               ),
             ),
           ),
@@ -340,7 +335,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
       subtitle: Text(episode.podcastTitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          style: Theme.of(context).textTheme.bodySmall),
       trailing: StreamBuilder<MediaItem?>(
         stream: audioHandler.mediaItem,
         builder: (context, snapshot) {
@@ -398,7 +393,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                           ? Icons.pause_circle_outline_rounded
                           : Icons.play_circle_outline_rounded,
                       size: 28,
-                      color: Colors.tealAccent,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                     onPressed: () async {
                       if (isCurrent) {
@@ -460,9 +455,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
               label: Text(cat['name']),
-              avatar: Icon(cat['icon'],
-                  size: 16,
-                  color: isSelected ? Colors.white : Colors.indigoAccent),
+              avatar: Icon(cat['icon'], size: 16),
               selected: isSelected,
               onSelected: (selected) {
                 if (_selectedGenreId == cat['id']) return;
@@ -473,10 +466,6 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   _isLoadingMore = false;
                 });
               },
-              selectedColor: Colors.indigoAccent,
-              checkmarkColor: Colors.white,
-              labelStyle:
-                  TextStyle(color: isSelected ? Colors.white : Colors.white70),
             ),
           );
         },

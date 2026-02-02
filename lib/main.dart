@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_service/audio_service.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'services/storage/storage_service.dart';
 import 'services/audio/audio_handler.dart';
 import 'services/platform/live_activity_service.dart';
 import 'core/providers/providers.dart';
+import 'core/theme/theme_provider.dart';
 
 import 'features/navigation_wrapper.dart';
 
@@ -37,33 +36,19 @@ Future<void> main() async {
   );
 }
 
-class EchoPodApp extends StatelessWidget {
+class EchoPodApp extends ConsumerWidget {
   const EchoPodApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeConfig = ref.watch(themeProvider);
+
     return MaterialApp(
       title: 'EchoPod AI',
       debugShowCheckedModeBanner: false,
-      theme: FlexThemeData.light(
-        scheme: FlexScheme.indigo,
-        useMaterial3: true,
-        textTheme: GoogleFonts.interTextTheme(),
-      ),
-      darkTheme: FlexThemeData.dark(
-        scheme: FlexScheme.indigo,
-        useMaterial3: true,
-        surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-        blendLevel: 13,
-        subThemesData: const FlexSubThemesData(
-          blendOnLevel: 20,
-          useTextTheme: true,
-          useM2StyleDividerInM3: true,
-        ),
-        visualDensity: FlexColorScheme.comfortablePlatformDensity,
-        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-      ),
-      themeMode: ThemeMode.dark,
+      theme: buildLightTheme(themeConfig),
+      darkTheme: buildDarkTheme(themeConfig),
+      themeMode: themeConfig.mode,
       home: const MainNavigationWrapper(),
     );
   }

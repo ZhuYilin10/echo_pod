@@ -24,6 +24,7 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
   bool _isLoading = true;
   bool _isPaginating = false;
   bool _isAscending = false;
+  bool _isAppBarCollapsed = false; // 追踪AppBar是否收起
   static const int _pageSize = 20;
 
   final ScrollController _scrollController = ScrollController();
@@ -51,6 +52,13 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
   }
 
   void _onScroll() {
+    // 检查AppBar是否收起 (250是expandedHeight)
+    final isCollapsed = _scrollController.hasClients &&
+        _scrollController.offset > (250 - kToolbarHeight);
+    if (isCollapsed != _isAppBarCollapsed) {
+      setState(() => _isAppBarCollapsed = isCollapsed);
+    }
+
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
       if (!_isPaginating && _displayedEpisodes.length < _allEpisodes.length) {
@@ -149,11 +157,14 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
             SliverAppBar(
               expandedHeight: 250,
               pinned: true,
+              backgroundColor: Theme.of(context).colorScheme.surface,
               flexibleSpace: FlexibleSpaceBar(
                 title: Text(widget.podcast.title,
-                    style: const TextStyle(shadows: [
-                      Shadow(blurRadius: 10, color: Colors.black)
-                    ])),
+                    style: TextStyle(
+                        color:
+                            _isAppBarCollapsed ? Colors.black : Colors.white)),
+                titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+                collapseMode: CollapseMode.pin,
                 background: Stack(
                   fit: StackFit.expand,
                   children: [

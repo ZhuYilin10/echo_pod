@@ -20,8 +20,9 @@ class PlaylistScreen extends ConsumerWidget {
         builder: (context, snapshot) {
           final queue = snapshot.data ?? [];
           if (queue.isEmpty) {
-            return const Center(
-                child: Text('播放列表空空如也', style: TextStyle(color: Colors.grey)));
+            return Center(
+                child: Text('播放列表空空如也',
+                    style: Theme.of(context).textTheme.bodyMedium));
           }
 
           return ListView.builder(
@@ -43,15 +44,16 @@ class PlaylistScreen extends ConsumerWidget {
                 title: Text(
                   item.title,
                   style: TextStyle(
-                    color: isCurrent ? Colors.indigoAccent : Colors.white,
+                    color: isCurrent
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurface,
                     fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
                 subtitle: Text(item.album ?? '',
                     style: const TextStyle(fontSize: 12)),
                 trailing: IconButton(
-                  icon: const Icon(Icons.remove_circle_outline,
-                      color: Colors.redAccent),
+                  icon: const Icon(Icons.remove_circle_outline),
                   onPressed: () => audioHandler.removeQueueItemAt(index),
                 ),
                 onTap: () => audioHandler.skipToQueueItem(index),

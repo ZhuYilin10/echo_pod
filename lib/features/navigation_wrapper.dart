@@ -4,6 +4,7 @@ import '../core/providers/providers.dart';
 import '../services/web_podcast_service.dart';
 import 'home/home_screen.dart';
 import 'discovery/discovery_screen.dart';
+import 'settings/settings_screen.dart';
 import 'player/mini_player.dart';
 
 class MainNavigationWrapper extends ConsumerStatefulWidget {
@@ -20,6 +21,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const DiscoveryScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -45,13 +47,13 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
-        selectedItemColor: Colors.indigoAccent,
-        unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: '我的'),
           BottomNavigationBarItem(
               icon: Icon(Icons.explore_outlined), label: '发现'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.settings_outlined), label: '设置'),
         ],
       ),
     );
