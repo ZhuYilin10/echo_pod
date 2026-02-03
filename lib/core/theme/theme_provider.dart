@@ -40,35 +40,80 @@ final themeProvider = StateNotifierProvider<ThemeNotifier, AppThemeConfig>(
   },
 );
 
+/// 构建 M3 Expressive 混合字体
+TextTheme _buildExpressiveTextTheme(TextTheme? base) {
+  final baseTheme = base ?? ThemeData.light().textTheme;
+  final outfit = GoogleFonts.outfitTextTheme(baseTheme);
+  final inter = GoogleFonts.interTextTheme(baseTheme);
+
+  return inter.copyWith(
+    displayLarge: outfit.displayLarge
+        ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -1.0),
+    displayMedium: outfit.displayMedium
+        ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5),
+    displaySmall: outfit.displaySmall?.copyWith(fontWeight: FontWeight.w800),
+    headlineLarge: outfit.headlineLarge
+        ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5),
+    headlineMedium:
+        outfit.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
+    headlineSmall: outfit.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+    titleLarge: outfit.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+    titleMedium: outfit.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+    titleSmall: outfit.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+    // Keep Inter for Body/Label for readability
+    bodyLarge: inter.bodyLarge,
+    bodyMedium: inter.bodyMedium,
+    bodySmall: inter.bodySmall,
+    labelLarge: inter.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+  );
+}
+
+/// M3 Expressive 子组件主题配置
+const _expressiveSubThemes = FlexSubThemesData(
+  blendOnLevel: 10,
+  blendTextTheme: true,
+  useTextTheme: true,
+  useM2StyleDividerInM3: true,
+  defaultRadius: 24.0, // Extra Large Shapes
+  thinBorderWidth: 1.0,
+  thickBorderWidth: 2.0,
+
+  inputDecoratorRadius: 16.0,
+  fabUseShape: true,
+  fabRadius: 16.0,
+  chipRadius: 12.0,
+  cardElevation: 0.5,
+  popupMenuRadius: 12.0,
+  alignedDropdown: true,
+  useInputDecoratorThemeInDialogs: true,
+);
+
 /// 生成浅色主题
 ThemeData buildLightTheme(AppThemeConfig config) {
+  final textTheme = _buildExpressiveTextTheme(ThemeData.light().textTheme);
+
   if (config.isCustom && config.primaryColor != null) {
-    // 日本传统色主题 - 米色背景
-    const beige = Color(0xFFF5F1E8); // 米色背景
+    // 日本传统色主题
     final primary = config.primaryColor!;
 
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: ColorScheme.light(
+    return FlexThemeData.light(
+      colors: FlexSchemeColor.from(
         primary: primary,
-        onPrimary: Colors.white,
-        primaryContainer: primary.withOpacity(0.2),
-        onPrimaryContainer: primary,
         secondary: primary,
-        onSecondary: Colors.white,
-        error: const Color(0xFFBA1A1A),
-        onError: Colors.white,
-        surface: beige,
-        onSurface: const Color(0xFF1C1B1F),
-        surfaceContainerLowest: beige,
-        surfaceContainerLow: beige,
-        surfaceContainer: beige,
-        surfaceContainerHigh: beige,
-        surfaceContainerHighest: beige,
-        outline: primary.withOpacity(0.5),
+        tertiary: primary.withOpacity(0.5),
       ),
-      scaffoldBackgroundColor: beige,
-      textTheme: GoogleFonts.interTextTheme(),
+      useMaterial3: true,
+      surfaceMode: FlexSurfaceMode.highScaffoldLowSurface, // More modern look
+      blendLevel: 10, // Slight blend for harmony
+      subThemesData: _expressiveSubThemes.copyWith(
+        blendOnLevel: 10,
+      ),
+      keyColors: const FlexKeyColors(
+        useSecondary: true,
+        useTertiary: true,
+      ),
+      textTheme: textTheme,
+      visualDensity: FlexColorScheme.comfortablePlatformDensity,
     );
   } else {
     // 预设Flex Scheme主题
@@ -77,13 +122,26 @@ ThemeData buildLightTheme(AppThemeConfig config) {
       useMaterial3: true,
       surfaceMode: FlexSurfaceMode.level,
       blendLevel: config.blendLevel,
-      textTheme: GoogleFonts.interTextTheme(),
+      subThemesData: _expressiveSubThemes,
+      keyColors: const FlexKeyColors(
+        useSecondary: true,
+        useTertiary: true,
+      ),
+      textTheme: textTheme,
+      visualDensity: FlexColorScheme.comfortablePlatformDensity,
     );
   }
 }
 
 /// 生成深色主题
 ThemeData buildDarkTheme(AppThemeConfig config) {
+  final textTheme = _buildExpressiveTextTheme(ThemeData.dark().textTheme);
+
+  // Common dark theme settings
+  final darkSubThemes = _expressiveSubThemes.copyWith(
+    blendOnLevel: 20,
+  );
+
   if (config.isCustom && config.primaryColor != null) {
     // 自定义颜色主题
     return FlexThemeData.dark(
@@ -94,13 +152,13 @@ ThemeData buildDarkTheme(AppThemeConfig config) {
       useMaterial3: true,
       surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
       blendLevel: config.blendLevel,
-      subThemesData: const FlexSubThemesData(
-        blendOnLevel: 20,
-        useTextTheme: true,
-        useM2StyleDividerInM3: true,
+      subThemesData: darkSubThemes,
+      keyColors: const FlexKeyColors(
+        useSecondary: true,
+        useTertiary: true,
       ),
       visualDensity: FlexColorScheme.comfortablePlatformDensity,
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+      textTheme: textTheme,
     );
   } else {
     // 预设FlexScheme主题
@@ -109,13 +167,13 @@ ThemeData buildDarkTheme(AppThemeConfig config) {
       useMaterial3: true,
       surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
       blendLevel: config.blendLevel,
-      subThemesData: const FlexSubThemesData(
-        blendOnLevel: 20,
-        useTextTheme: true,
-        useM2StyleDividerInM3: true,
+      subThemesData: darkSubThemes,
+      keyColors: const FlexKeyColors(
+        useSecondary: true,
+        useTertiary: true,
       ),
       visualDensity: FlexColorScheme.comfortablePlatformDensity,
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+      textTheme: textTheme,
     );
   }
 }

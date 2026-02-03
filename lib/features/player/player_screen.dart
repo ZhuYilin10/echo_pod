@@ -677,9 +677,14 @@ class _SpeedDialogBottomSheetState extends State<_SpeedDialogBottomSheet> {
                         HapticFeedback.selectionClick();
                         setState(() {
                           currentSpeed = newSpeed;
-                          // Disconnect channel override if manually changed
-                          overrideChannel = false;
+                          // Do NOT disconnect channel override if manually changed.
+                          // Instead, if override is ON, update the saved preference immediately.
+                          if (overrideChannel) {
+                            widget.storageService
+                                .savePodcastSpeed(widget.feedUrl, currentSpeed);
+                          }
                         });
+
                         // Only update AudioHandler if this is the currently playing item
                         if (widget.audioHandler.mediaItem.value?.id ==
                             widget.targetGuid) {
@@ -688,7 +693,7 @@ class _SpeedDialogBottomSheetState extends State<_SpeedDialogBottomSheet> {
                           widget.audioHandler.setSpeed(currentSpeed);
                         } else {
                           print(
-                              '[SpeedLog] SpeedDialog: Slider changed to $currentSpeed. NOT updating active playback (target ${widget.targetGuid} != active ${widget.audioHandler.mediaItem.value?.id}).');
+                              '[SpeedLog] SpeedDialog: Slider changed to $currentSpeed. NOT updating active playback.');
                         }
                       }
                     },

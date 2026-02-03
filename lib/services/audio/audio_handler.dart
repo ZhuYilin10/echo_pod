@@ -47,19 +47,8 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
           _currentEpisode = episode;
           _startSaveTimer();
 
-          // Apply podcast-specific speed if exists
-          final savedSpeed =
-              await _storageService.getPodcastSpeed(episode.podcastFeedUrl);
-          if (savedSpeed != null) {
-            print(
-                '[SpeedLog] AudioHandler: Found saved speed $savedSpeed for ${episode.podcastTitle}, applying.');
-            await setSpeed(savedSpeed);
-          } else {
-            // Reset to normal speed if no preference for this podcast
-            print(
-                '[SpeedLog] AudioHandler: No saved speed for ${episode.podcastTitle}, resetting to 1.0x.');
-            await setSpeed(1.0);
-          }
+          // Apply speed explicitly
+          await _applySpeedForEpisode(episode);
         }
       }
     });
@@ -561,6 +550,10 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
         await _storageService.addToHistory(episode);
         _startSaveTimer();
+
+        // Explicitly apply speed for the new episode to ensure it's set
+        // even if the stream listener is slightly delayed or we are just resuming.
+        await _applySpeedForEpisode(episode);
       }
     } catch (e) {
       print('Error playing episode: $e');
@@ -636,5 +629,20 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
       speed: _currentSpeed, // Use local cache
       queueIndex: _player.currentIndex,
     );
+  }
+
+  Future<void> _applySpeedForEpisode(Episode episode) async {
+    final savedSpeed =
+        await _storageService.getPodcastSpeed(episode.podcastFeedUrl);
+    if (savedSpeed != null) {
+      print(
+          '[SpeedLog] AudioHandler: Found saved speed $savedSpeed for ${episode.podcastTitle}, applying.');
+      await setSpeed(savedSpeed);
+    } else {
+      // Reset to normal speed if no preference for this podcast
+      print(
+          '[SpeedLog] AudioHandler: No saved speed for ${episode.podcastTitle}, resetting to 1.0x.');
+      await setSpeed(1.0);
+    }
   }
 }

@@ -7,7 +7,14 @@ import 'package:flutter/foundation.dart';
 import 'xiaoyuzhou_parser_service.dart';
 
 class PodcastService {
-  final Dio _dio = Dio();
+  final Dio _dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
+    headers: {
+      'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    },
+  ));
   final XiaoyuzhouParserService? xiaoyuzhouParser;
 
   PodcastService({this.xiaoyuzhouParser});
@@ -42,8 +49,8 @@ class PodcastService {
           imageUrl: item['artworkUrl600'] ?? item['artworkUrl100'],
         );
       }).toList();
-    } catch (_) {
-      return [];
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -203,7 +210,13 @@ class PodcastService {
     if (episode.guid.contains('xiaoyuzhoufm.com') && xiaoyuzhouParser != null) {
       try {
         final resolved = await xiaoyuzhouParser!.parseUrl(episode.guid);
-        if (resolved != null) return resolved;
+        if (resolved != null && resolved.audioUrl != null) {
+          return episode.copyWith(
+            audioUrl: resolved.audioUrl,
+            // reliable metadata from parser if missing in original (though original is usually better from API)
+            description: episode.description ?? resolved.description,
+          );
+        }
       } catch (e) {
         debugPrint('Xiaoyuzhou quick resolve failed: $e');
       }
@@ -223,35 +236,64 @@ class PodcastService {
 
   Future<List<Episode>> fetchTrendingEpisodes() async {
     try {
-      // Fetch XYZRank Hot Episodes directly from GitHub
-      final response = await _dio.get(
-          'https://raw.githubusercontent.com/eddiehe99/xyzrank/main/hot_episodes.json');
+      debugPrint(
+          'TrendingEpisodes: Fetching from https://xyzrank.com/api/episodes?offset=0&limit=50');
+      // Fetch XYZRank Hot Episodes directly from API
+      final response =
+          await _dio.get('https://xyzrank.com/api/episodes?offset=0&limit=50');
+
+      debugPrint(
+          'TrendingEpisodes: Response received. Status: ${response.statusCode}');
 
       final dynamic responseData =
           response.data is String ? jsonDecode(response.data) : response.data;
 
-      final List<dynamic> episodesData = responseData['data']['episodes'];
+      debugPrint(
+          'TrendingEpisodes: Response data type: ${responseData.runtimeType}');
 
-      return episodesData.map((item) {
-        return Episode(
-          guid: item['link'] ?? 'xyz_${item['title'].hashCode}',
-          title: item['title'] ?? 'Unknown Title',
-          podcastTitle: item['podcastName'] ?? 'Unknown Podcast',
-          imageUrl: item['logoURL'],
-          description: 'Play count: ${item['playCount']}',
-          // These episodes lack direct audio/feed URLs, so they will need resolution
-          // when the user tries to play them.
-          podcastFeedUrl: '',
-          audioUrl: null,
-          pubDate: item['postTime'] != null
-              ? DateTime.tryParse(item['postTime'])
-              : null,
-          duration: item['duration']?.toString(),
-        );
-      }).toList();
+      if (responseData['items'] == null) {
+        debugPrint('TrendingEpisodes: "items" field is null');
+        return [];
+      }
+      final List<dynamic> episodesData = responseData['items'];
+
+      debugPrint(
+          'TrendingEpisodes: Raw data items count: ${episodesData.length}');
+
+      final results = episodesData
+          .map((item) {
+            try {
+              final title = item['title'] ?? 'Unknown Title';
+              final link = item['link'];
+              final guid = link ?? 'xyz_${title.hashCode}';
+
+              return Episode(
+                guid: guid,
+                title: title,
+                podcastTitle: item['podcastName'] ?? 'Unknown Podcast',
+                imageUrl: item['logoURL'],
+                description: 'Play count: ${item['playCount'] ?? 0}',
+                podcastFeedUrl: '',
+                audioUrl: null,
+                pubDate: item['postTime'] != null
+                    ? DateTime.tryParse(item['postTime'])
+                    : null,
+                duration: item['duration']?.toString(),
+              );
+            } catch (e) {
+              debugPrint(
+                  'TrendingEpisodes: Error parsing item: $item. Error: $e');
+              return null;
+            }
+          })
+          .whereType<Episode>()
+          .toList();
+
+      debugPrint('TrendingEpisodes: Parsed ${results.length} valid episodes');
+      return results;
     } catch (e) {
       debugPrint('Error fetching trending episodes: $e');
-      return [];
+      rethrow;
     }
   }
 }
