@@ -6,6 +6,7 @@ import '../../core/providers/providers.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
 
 import '../../services/semantic_search_service.dart';
+import 'package:m3e_collection/m3e_collection.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   final String? initialQuery;
@@ -97,7 +98,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   }
 
   Widget _buildPodcastList() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading) {
+      return Center(
+          child: CircularProgressIndicatorM3E(
+        size: CircularProgressM3ESize.m,
+        activeColor: Theme.of(context).colorScheme.primary,
+      ));
+    }
     if (_podcastResults.isEmpty) {
       return const Center(child: Text('输入关键词搜索中文播客'));
     }
@@ -130,7 +137,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen>
   }
 
   Widget _buildContentList() {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isLoading) {
+      return Center(
+          child: CircularProgressIndicatorM3E(
+        size: CircularProgressM3ESize.m,
+        activeColor: Theme.of(context).colorScheme.primary,
+      ));
+    }
     if (_contentResults.isEmpty) {
       return const Center(child: Text('AI 正在为您检索全网播客内容...\n试试搜“Flutter 渲染”'));
     }

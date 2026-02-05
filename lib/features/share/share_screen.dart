@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
 import 'quote_card.dart';
+import 'package:m3e_collection/m3e_collection.dart';
 
 class ShareScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -94,10 +95,13 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
             Expanded(
               child: Center(
                 child: _isLoading
-                    ? const Column(
+                    ? Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircularProgressIndicator(),
+                          CircularProgressIndicatorM3E(
+                              size: CircularProgressM3ESize.m,
+                              activeColor:
+                                  Theme.of(context).colorScheme.primary),
                           SizedBox(height: 20),
                           Text('AI 正在为您打磨金句...',
                               style: TextStyle(color: Colors.grey)),

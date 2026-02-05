@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
 import '../episode_detail/episode_detail_screen.dart';
+import 'package:m3e_collection/m3e_collection.dart';
 
 class DownloadsScreen extends ConsumerWidget {
   const DownloadsScreen({super.key});
@@ -22,7 +23,8 @@ class DownloadsScreen extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.download_for_offline_rounded, size: 80, color: Colors.grey),
+                  Icon(Icons.download_for_offline_rounded,
+                      size: 80, color: Colors.grey),
                   SizedBox(height: 16),
                   Text('暂无下载剧集', style: TextStyle(color: Colors.grey)),
                 ],
@@ -46,13 +48,15 @@ class DownloadsScreen extends ConsumerWidget {
                     errorBuilder: (_, __, ___) => const Icon(Icons.podcasts),
                   ),
                 ),
-                title: Text(episode.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                title: Text(episode.title,
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
                 subtitle: Text(
                   '${episode.podcastTitle}${episode.pubDate != null ? " · ${episode.pubDate!.year}-${episode.pubDate!.month}-${episode.pubDate!.day}" : ""}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                  icon: const Icon(Icons.delete_outline_rounded,
+                      color: Colors.redAccent),
                   onPressed: () async {
                     final confirmed = await _showDeleteConfirm(context);
                     if (confirmed == true) {
@@ -67,14 +71,20 @@ class DownloadsScreen extends ConsumerWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => EpisodeDetailScreen(episode: episode)),
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            EpisodeDetailScreen(episode: episode)),
                   );
                 },
               );
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(
+            child: CircularProgressIndicatorM3E(
+          size: CircularProgressM3ESize.m,
+          activeColor: Theme.of(context).colorScheme.primary,
+        )),
         error: (e, s) => Center(child: Text('Error: $e')),
       ),
     );
@@ -87,7 +97,9 @@ class DownloadsScreen extends ConsumerWidget {
         title: const Text('删除下载'),
         content: const Text('确定要删除这集下载的音频吗？'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('取消')),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: const Text('删除', style: TextStyle(color: Colors.redAccent)),

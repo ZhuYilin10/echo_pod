@@ -8,6 +8,7 @@ import '../ai_agent/ai_agent_screen.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
 import '../player/player_screen.dart';
 import '../common/download_button.dart';
+import 'package:m3e_collection/m3e_collection.dart';
 
 class EpisodeDetailScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -131,10 +132,11 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
             ),
-            loading: () => const SizedBox(
-                width: 40,
-                child:
-                    Center(child: CircularProgressIndicator(strokeWidth: 2))),
+            loading: () => Center(
+                child: CircularProgressIndicatorM3E(
+              size: CircularProgressM3ESize.s,
+              activeColor: Theme.of(context).colorScheme.primary,
+            )),
             error: (_, __) => const SizedBox(),
           ),
           const SizedBox(width: 8),
@@ -215,11 +217,11 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                               SizedBox(
                                 width: 54,
                                 height: 54,
-                                child: CircularProgressIndicator(
+                                child: CircularProgressIndicatorM3E(
                                   value: _calculateProgress(
                                       playbackSnapshot.data, snapshot.data),
-                                  strokeWidth: 2,
-                                  color: colorScheme.primary,
+                                  activeColor: colorScheme.primary,
+                                  size: CircularProgressM3ESize.m,
                                 ),
                               ),
                             IconButton(
@@ -273,7 +275,11 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
             ),
             const SizedBox(height: 24),
             if (_isSummarizing)
-              const Center(child: CircularProgressIndicator())
+              Center(
+                  child: CircularProgressIndicatorM3E(
+                size: CircularProgressM3ESize.m,
+                activeColor: colorScheme.primary,
+              ))
             else if (_aiSummary != null)
               Column(
                 children: [

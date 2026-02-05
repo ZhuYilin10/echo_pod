@@ -9,6 +9,7 @@ import '../../core/providers/providers.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
 import '../search/search_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
+import 'package:m3e_collection/m3e_collection.dart';
 
 class DiscoveryScreen extends ConsumerStatefulWidget {
   const DiscoveryScreen({super.key});
@@ -302,10 +303,13 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                     childCount: displayedData.length + (_isLoadingMore ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index == displayedData.length) {
-                        return const Center(
+                        return Center(
                             child: Padding(
                           padding: EdgeInsets.all(8.0),
-                          child: CircularProgressIndicator(),
+                          child: CircularProgressIndicatorM3E(
+                            size: CircularProgressM3ESize.s,
+                            activeColor: Theme.of(context).colorScheme.primary,
+                          ),
                         ));
                       }
                       final item = displayedData[index];
@@ -319,8 +323,12 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   ),
                 );
               },
-              loading: () => const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
+              loading: () => SliverFillRemaining(
+                child: Center(
+                    child: CircularProgressIndicatorM3E(
+                  size: CircularProgressM3ESize.m,
+                  activeColor: Theme.of(context).colorScheme.primary,
+                )),
               ),
               error: (e, s) => SliverFillRemaining(
                 hasScrollBody: false,

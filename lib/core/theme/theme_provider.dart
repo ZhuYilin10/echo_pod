@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import '../../services/storage/storage_service.dart';
 import '../providers/providers.dart';
 import 'theme_config.dart';
@@ -10,8 +9,7 @@ import 'theme_config.dart';
 class ThemeNotifier extends StateNotifier<AppThemeConfig> {
   final StorageService _storageService;
 
-  ThemeNotifier(this._storageService)
-      : super(themePresets[AppThemePreset.enshuNezumi]!) {
+  ThemeNotifier(this._storageService) : super(defaultThemeConfig) {
     _loadTheme();
   }
 
@@ -22,14 +20,18 @@ class ThemeNotifier extends StateNotifier<AppThemeConfig> {
     }
   }
 
-  Future<void> setPresetTheme(AppThemePreset preset) async {
-    final theme = themePresets[preset]!;
-    await setTheme(theme);
-  }
-
   Future<void> setTheme(AppThemeConfig theme) async {
     state = theme;
     await _storageService.saveTheme(theme);
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    final newTheme = AppThemeConfig(
+      id: state.id,
+      name: state.name,
+      mode: mode,
+    );
+    await setTheme(newTheme);
   }
 }
 
@@ -68,112 +70,214 @@ TextTheme _buildExpressiveTextTheme(TextTheme? base) {
   );
 }
 
-/// M3 Expressive 子组件主题配置
-const _expressiveSubThemes = FlexSubThemesData(
-  blendOnLevel: 10,
-  blendTextTheme: true,
-  useTextTheme: true,
-  useM2StyleDividerInM3: true,
-  defaultRadius: 24.0, // Extra Large Shapes
-  thinBorderWidth: 1.0,
-  thickBorderWidth: 2.0,
+/// 创建浅色配色方案
+ColorScheme _buildLightColorScheme() {
+  return ColorScheme.light(
+    primary: AppColors.vermillion,
+    onPrimary: Colors.white,
+    primaryContainer: AppColors.peachBlossom.withOpacity(0.3),
+    onPrimaryContainer: AppColors.indigo,
+    secondary: AppColors.bambooGreen,
+    onSecondary: Colors.white,
+    secondaryContainer: AppColors.teaGreen.withOpacity(0.5),
+    onSecondaryContainer: AppColors.indigo,
+    tertiary: AppColors.peachBlossom,
+    onTertiary: AppColors.indigo,
+    tertiaryContainer: AppColors.peachBlossom.withOpacity(0.2),
+    onTertiaryContainer: AppColors.indigo,
+    error: const Color(0xFFBA1A1A),
+    onError: Colors.white,
+    errorContainer: const Color(0xFFFFDAD6),
+    onErrorContainer: const Color(0xFF410002),
+    surface: AppColors.ricePaper,
+    onSurface: AppColors.indigo,
+    surfaceContainerHighest: AppColors.softBeige,
+    onSurfaceVariant: AppColors.indigo.withOpacity(0.8),
+    outline: AppColors.teaGreen,
+    outlineVariant: AppColors.teaGreen.withOpacity(0.5),
+    shadow: Colors.black,
+    scrim: Colors.black,
+    inverseSurface: AppColors.indigo,
+    onInverseSurface: AppColors.ricePaper,
+    inversePrimary: AppColors.peachBlossom,
+  );
+}
 
-  inputDecoratorRadius: 16.0,
-  fabUseShape: true,
-  fabRadius: 16.0,
-  chipRadius: 12.0,
-  cardElevation: 0.5,
-  popupMenuRadius: 12.0,
-  alignedDropdown: true,
-  useInputDecoratorThemeInDialogs: true,
-);
+/// 创建深色配色方案
+ColorScheme _buildDarkColorScheme() {
+  return ColorScheme.dark(
+    primary: AppColors.peachBlossom,
+    onPrimary: AppColors.indigo,
+    primaryContainer: AppColors.vermillion.withOpacity(0.6),
+    onPrimaryContainer: Colors.white,
+    secondary: AppColors.teaGreen,
+    onSecondary: AppColors.indigo,
+    secondaryContainer: AppColors.bambooGreen.withOpacity(0.6),
+    onSecondaryContainer: Colors.white,
+    tertiary: AppColors.peachBlossom.withOpacity(0.8),
+    onTertiary: AppColors.indigo,
+    tertiaryContainer: AppColors.vermillion.withOpacity(0.4),
+    onTertiaryContainer: Colors.white,
+    error: const Color(0xFFFFB4AB),
+    onError: const Color(0xFF690005),
+    errorContainer: const Color(0xFF93000A),
+    onErrorContainer: const Color(0xFFFFDAD6),
+    surface: const Color(0xFF1A1C1E),
+    onSurface: const Color(0xFFE3E2E6),
+    surfaceContainerHighest: const Color(0xFF44464F),
+    onSurfaceVariant: const Color(0xFFC5C6D0),
+    outline: AppColors.teaGreen.withOpacity(0.6),
+    outlineVariant: const Color(0xFF44464F),
+    shadow: Colors.black,
+    scrim: Colors.black,
+    inverseSurface: const Color(0xFFE3E2E6),
+    onInverseSurface: const Color(0xFF1A1C1E),
+    inversePrimary: AppColors.vermillion,
+  );
+}
 
 /// 生成浅色主题
 ThemeData buildLightTheme(AppThemeConfig config) {
+  final colorScheme = _buildLightColorScheme();
   final textTheme = _buildExpressiveTextTheme(ThemeData.light().textTheme);
 
-  if (config.isCustom && config.primaryColor != null) {
-    // 日本传统色主题
-    final primary = config.primaryColor!;
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: colorScheme,
+    textTheme: textTheme,
+    scaffoldBackgroundColor: AppColors.ricePaper,
 
-    return FlexThemeData.light(
-      colors: FlexSchemeColor.from(
-        primary: primary,
-        secondary: primary,
-        tertiary: primary.withOpacity(0.5),
+    // AppBar
+    appBarTheme: AppBarTheme(
+      backgroundColor: AppColors.ricePaper,
+      foregroundColor: AppColors.indigo,
+      elevation: 0,
+      centerTitle: false,
+    ),
+
+    // Card
+    cardTheme: CardThemeData(
+      color: Colors.white,
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
       ),
-      useMaterial3: true,
-      surfaceMode: FlexSurfaceMode.highScaffoldLowSurface, // More modern look
-      blendLevel: 10, // Slight blend for harmony
-      subThemesData: _expressiveSubThemes.copyWith(
-        blendOnLevel: 10,
+    ),
+
+    // FAB
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: AppColors.vermillion,
+      foregroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      keyColors: const FlexKeyColors(
-        useSecondary: true,
-        useTertiary: true,
+    ),
+
+    // Chip
+    chipTheme: ChipThemeData(
+      backgroundColor: AppColors.teaGreen.withOpacity(0.3),
+      selectedColor: AppColors.bambooGreen,
+      labelStyle: textTheme.bodyMedium,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-      textTheme: textTheme,
-      visualDensity: FlexColorScheme.comfortablePlatformDensity,
-    );
-  } else {
-    // 预设Flex Scheme主题
-    return FlexThemeData.light(
-      scheme: config.flexScheme ?? FlexScheme.indigo,
-      useMaterial3: true,
-      surfaceMode: FlexSurfaceMode.level,
-      blendLevel: config.blendLevel,
-      subThemesData: _expressiveSubThemes,
-      keyColors: const FlexKeyColors(
-        useSecondary: true,
-        useTertiary: true,
+    ),
+
+    // Input
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.softBeige,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
       ),
-      textTheme: textTheme,
-      visualDensity: FlexColorScheme.comfortablePlatformDensity,
-    );
-  }
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: AppColors.vermillion, width: 2),
+      ),
+    ),
+
+    // Divider
+    dividerTheme: DividerThemeData(
+      color: AppColors.teaGreen.withOpacity(0.3),
+      thickness: 1,
+    ),
+  );
 }
 
 /// 生成深色主题
 ThemeData buildDarkTheme(AppThemeConfig config) {
+  final colorScheme = _buildDarkColorScheme();
   final textTheme = _buildExpressiveTextTheme(ThemeData.dark().textTheme);
 
-  // Common dark theme settings
-  final darkSubThemes = _expressiveSubThemes.copyWith(
-    blendOnLevel: 20,
-  );
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: colorScheme,
+    textTheme: textTheme,
+    scaffoldBackgroundColor: const Color(0xFF1A1C1E),
 
-  if (config.isCustom && config.primaryColor != null) {
-    // 自定义颜色主题
-    return FlexThemeData.dark(
-      colors: FlexSchemeColor.from(
-        primary: config.primaryColor!,
-        secondary: config.secondaryColor ?? config.primaryColor!,
+    // AppBar
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Color(0xFF1A1C1E),
+      foregroundColor: Color(0xFFE3E2E6),
+      elevation: 0,
+      centerTitle: false,
+    ),
+
+    // Card
+    cardTheme: CardThemeData(
+      color: const Color(0xFF2C2E30),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
       ),
-      useMaterial3: true,
-      surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
-      blendLevel: config.blendLevel,
-      subThemesData: darkSubThemes,
-      keyColors: const FlexKeyColors(
-        useSecondary: true,
-        useTertiary: true,
+    ),
+
+    // FAB
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: AppColors.peachBlossom,
+      foregroundColor: AppColors.indigo,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
-      visualDensity: FlexColorScheme.comfortablePlatformDensity,
-      textTheme: textTheme,
-    );
-  } else {
-    // 预设FlexScheme主题
-    return FlexThemeData.dark(
-      scheme: config.flexScheme ?? FlexScheme.indigo,
-      useMaterial3: true,
-      surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
-      blendLevel: config.blendLevel,
-      subThemesData: darkSubThemes,
-      keyColors: const FlexKeyColors(
-        useSecondary: true,
-        useTertiary: true,
+    ),
+
+    // Chip
+    chipTheme: ChipThemeData(
+      backgroundColor: AppColors.bambooGreen.withOpacity(0.3),
+      selectedColor: AppColors.teaGreen,
+      labelStyle: textTheme.bodyMedium,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-      visualDensity: FlexColorScheme.comfortablePlatformDensity,
-      textTheme: textTheme,
-    );
-  }
+    ),
+
+    // Input
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: const Color(0xFF2C2E30),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: AppColors.peachBlossom, width: 2),
+      ),
+    ),
+
+    // Divider
+    dividerTheme: DividerThemeData(
+      color: AppColors.bambooGreen.withOpacity(0.3),
+      thickness: 1,
+    ),
+  );
 }

@@ -12,6 +12,7 @@ import '../search/search_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
 import 'downloads_screen.dart';
 import '../common/download_button.dart';
+import 'package:m3e_collection/m3e_collection.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -154,8 +155,12 @@ class HomeScreen extends ConsumerWidget {
                         childCount: episodes.length,
                       ),
                     ),
-              loading: () => const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator())),
+              loading: () => SliverFillRemaining(
+                  child: Center(
+                      child: CircularProgressIndicatorM3E(
+                size: CircularProgressM3ESize.m,
+                activeColor: Theme.of(context).colorScheme.primary,
+              ))),
               error: (e, s) =>
                   SliverFillRemaining(child: Center(child: Text('加载失败: $e'))),
             ),

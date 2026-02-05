@@ -23,6 +23,9 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   Duration _totalSavedTime = Duration.zero;
   final _timeSavedController = BehaviorSubject<Duration>.seeded(Duration.zero);
 
+  // Current Episode Stream - 当前播放的单集
+  final _currentEpisodeController = BehaviorSubject<Episode?>.seeded(null);
+
   // Web Audio Support
   VideoPodcastController? _webController;
   StreamSubscription? _webSubscription;
@@ -45,6 +48,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
         if (item.extras != null) {
           final episode = Episode.fromJson(item.extras!);
           _currentEpisode = episode;
+          _currentEpisodeController.add(episode);
           _startSaveTimer();
 
           // Apply speed explicitly
@@ -247,6 +251,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
         if (items.isNotEmpty) {
           mediaItem.add(items.first);
           _currentEpisode = history.first;
+          _currentEpisodeController.add(history.first);
           // seek to saved position for the first item
           final savedPosition =
               await _storageService.getPosition(history.first.guid);
@@ -417,6 +422,12 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
   Stream<Duration?> get sleepTimerStream => _sleepTimerController.stream;
 
+  /// 当前播放的单集流 - 可在任何地方实时监听
+  Stream<Episode?> get currentEpisodeStream => _currentEpisodeController.stream;
+
+  /// 当前播放的单集（同步获取）
+  Episode? get currentEpisode => _currentEpisode;
+
   void setSleepTimer(Duration? duration) {
     _sleepTimer?.cancel();
     if (duration == null) {
@@ -450,6 +461,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
         await play();
       } else {
         _currentEpisode = null;
+        _currentEpisodeController.add(null);
         mediaItem.add(null);
         _stopSaveTimer();
       }
@@ -480,6 +492,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
       );
       mediaItem.add(item);
       _currentEpisode = episode;
+      _currentEpisodeController.add(episode);
 
       // Load URL in WebView (Video Player)
       if (episode.audioUrl != null) {
@@ -538,6 +551,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
         await _player.seek(Duration.zero, index: 0);
 
         _currentEpisode = episode;
+        _currentEpisodeController.add(episode);
         mediaItem.add(item);
 
         // Restore position for this episode

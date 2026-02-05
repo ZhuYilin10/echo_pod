@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
 import '../episode_detail/episode_detail_screen.dart';
+import 'package:m3e_collection/m3e_collection.dart';
 
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
@@ -45,19 +46,27 @@ class HistoryScreen extends ConsumerWidget {
                     errorBuilder: (_, __, ___) => const Icon(Icons.podcasts),
                   ),
                 ),
-                title: Text(episode.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-                subtitle: Text(episode.podcastTitle, style: Theme.of(context).textTheme.bodySmall),
+                title: Text(episode.title,
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                subtitle: Text(episode.podcastTitle,
+                    style: Theme.of(context).textTheme.bodySmall),
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => EpisodeDetailScreen(episode: episode)),
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            EpisodeDetailScreen(episode: episode)),
                   );
                 },
               );
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => Center(
+            child: CircularProgressIndicatorM3E(
+          size: CircularProgressM3ESize.m,
+          activeColor: Theme.of(context).colorScheme.primary,
+        )),
         error: (e, s) => Center(child: Text('Error: $e')),
       ),
     );

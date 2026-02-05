@@ -1,10 +1,10 @@
-import 'shelf/shelf_screen.dart';
-import 'components/floaty_nav_bar/floaty_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/providers.dart';
 import '../services/web_podcast_service.dart';
+import 'home/home_screen.dart';
 import 'discovery/discovery_screen.dart';
+import 'settings/settings_screen.dart';
 
 class MainNavigationWrapper extends ConsumerStatefulWidget {
   const MainNavigationWrapper({super.key});
@@ -18,8 +18,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    const ShelfScreen(),
+    const HomeScreen(),
     const DiscoveryScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -36,24 +37,21 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
-      body: _screens[_currentIndex],
-      bottomNavigationBar: FloatyNavBar(
-        selectedTab: _currentIndex,
-        shape: const CircleShape(),
-        tabs: [
-          FloatyTab(
-            isSelected: _currentIndex == 0,
-            onTap: () => setState(() => _currentIndex = 0),
-            title: '唱片架',
-            icon: const Icon(Icons.album_outlined),
-          ),
-          FloatyTab(
-            isSelected: _currentIndex == 1,
-            onTap: () => setState(() => _currentIndex = 1),
-            title: '发现',
-            icon: const Icon(Icons.explore_outlined),
-          ),
+      body: Column(
+        children: [
+          Expanded(child: _screens[_currentIndex]),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: '我的'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.explore_outlined), label: '发现'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.settings_outlined), label: '设置'),
         ],
       ),
     );

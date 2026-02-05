@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:m3e_collection/m3e_collection.dart';
 import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
 
@@ -56,10 +57,13 @@ class _DownloadButtonState extends ConsumerState<DownloadButton> {
           return SizedBox(
             width: widget.size,
             height: widget.size,
-            child: CircularProgressIndicator(
-              value: progress,
-              strokeWidth: 2,
-              color: widget.color ?? Theme.of(context).colorScheme.primary,
+            child: FittedBox(
+              child: CircularProgressIndicatorM3E(
+                value: progress,
+                size: CircularProgressM3ESize.s,
+                activeColor:
+                    widget.color ?? Theme.of(context).colorScheme.primary,
+              ),
             ),
           );
         }
@@ -68,9 +72,11 @@ class _DownloadButtonState extends ConsumerState<DownloadButton> {
           return SizedBox(
             width: widget.size,
             height: widget.size,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: widget.color ?? Colors.grey,
+            child: FittedBox(
+              child: CircularProgressIndicatorM3E(
+                size: CircularProgressM3ESize.s,
+                activeColor: widget.color ?? Colors.grey,
+              ),
             ),
           );
         }

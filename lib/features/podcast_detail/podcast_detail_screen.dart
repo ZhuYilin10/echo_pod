@@ -5,6 +5,7 @@ import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
 import '../episode_detail/episode_detail_screen.dart';
 import 'package:audio_service/audio_service.dart'; // Import for PlaybackState and MediaItem
+import 'package:m3e_collection/m3e_collection.dart';
 
 class PodcastDetailScreen extends ConsumerStatefulWidget {
   final Podcast podcast;
@@ -239,7 +240,10 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                             ),
                             child: Text(isSubscribed ? '已订阅' : '订阅'),
                           ),
-                          loading: () => const CircularProgressIndicator(),
+                          loading: () => CircularProgressIndicatorM3E(
+                            size: CircularProgressM3ESize.s,
+                            activeColor: Theme.of(context).colorScheme.primary,
+                          ),
                           error: (_, __) => const SizedBox(),
                         ),
                       ],
@@ -265,11 +269,14 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
               ),
             ),
             if (_isLoading)
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                   child: Center(
                       child: Padding(
                           padding: EdgeInsets.all(40),
-                          child: CircularProgressIndicator())))
+                          child: CircularProgressIndicatorM3E(
+                            size: CircularProgressM3ESize.m,
+                            activeColor: Theme.of(context).colorScheme.primary,
+                          ))))
             else
               SliverAnimatedList(
                 key: _listKey,
@@ -283,11 +290,14 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                 },
               ),
             if (_isPaginating)
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.all(16.0),
-                  child:
-                      Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  child: Center(
+                      child: CircularProgressIndicatorM3E(
+                    size: CircularProgressM3ESize.s,
+                    activeColor: Theme.of(context).colorScheme.primary,
+                  )),
                 ),
               ),
           ],

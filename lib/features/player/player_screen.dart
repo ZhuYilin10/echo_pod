@@ -14,6 +14,7 @@ import '../podcast_detail/podcast_detail_screen.dart';
 import '../common/download_button.dart';
 import '../../services/web_podcast_service.dart';
 import '../../services/storage/storage_service.dart';
+import 'package:m3e_collection/m3e_collection.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -250,11 +251,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                                 ),
                               ),
                             ),
-                            loading: () => const SizedBox(
+                            loading: () => SizedBox(
                                 width: 20,
                                 height: 20,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2)),
+                                child: FittedBox(
+                                  child: CircularProgressIndicatorM3E(
+                                    size: CircularProgressM3ESize.s,
+                                    activeColor: Theme.of(context)
+                                        .colorScheme
+                                        .secondaryContainer,
+                                  ),
+                                )),
                             error: (_, __) => const SizedBox(),
                           ),
                         ],
@@ -535,7 +542,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const SizedBox(
                     height: 200,
-                    child: Center(child: CircularProgressIndicator()));
+                    child: Center(
+                        child: CircularProgressIndicatorM3E(
+                      size: CircularProgressM3ESize.m,
+                      activeColor: Colors.tealAccent,
+                    )));
               }
               final savedSpeed = snapshot.data;
               final currentSpeed = audioHandler.playbackState.value.speed;
