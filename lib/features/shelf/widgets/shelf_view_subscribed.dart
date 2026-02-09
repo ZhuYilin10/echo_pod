@@ -4,8 +4,9 @@ import '../../../../core/models/podcast.dart';
 import 'shelf_header.dart';
 import 'shelf_podcast_card.dart';
 import 'package:m3e_collection/m3e_collection.dart';
+import '../../../../core/providers/providers.dart';
 
-class ShelfViewSubscribed extends StatelessWidget {
+class ShelfViewSubscribed extends ConsumerWidget {
   final AsyncValue<List<Podcast>> subscriptionsAsync;
 
   const ShelfViewSubscribed({
@@ -14,10 +15,12 @@ class ShelfViewSubscribed extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final freshRssSubsAsync = ref.watch(freshrssSubscriptionsProvider);
+
     return subscriptionsAsync.when(
       data: (podcasts) {
-        if (podcasts.isEmpty) {
+        if (podcasts.isEmpty && (freshRssSubsAsync.valueOrNull ?? []).isEmpty) {
           return _buildEmptyStateSliver();
         }
         return SliverMainAxisGroup(
@@ -43,6 +46,31 @@ class ShelfViewSubscribed extends StatelessWidget {
                 ),
               ),
             ),
+            if (freshRssSubsAsync.valueOrNull != null &&
+                freshRssSubsAsync.valueOrNull!.isNotEmpty) ...[
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              ShelfHeader(
+                title: 'FreshRSS 订阅',
+                moreText: '查看全部',
+                onMorePressed: () {},
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.85,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => ShelfPodcastCard(
+                        podcast: freshRssSubsAsync.valueOrNull![index]),
+                    childCount: freshRssSubsAsync.valueOrNull!.length,
+                  ),
+                ),
+              ),
+            ],
           ],
         );
       },

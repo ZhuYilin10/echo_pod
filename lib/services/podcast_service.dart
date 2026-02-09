@@ -6,6 +6,9 @@ import '../core/models/episode.dart';
 import 'package:flutter/foundation.dart';
 import 'xiaoyuzhou_parser_service.dart';
 
+import '../services/freshrss_service.dart';
+import '../services/storage/storage_service.dart';
+
 class PodcastService {
   final Dio _dio = Dio(BaseOptions(
     connectTimeout: const Duration(seconds: 10),
@@ -16,8 +19,14 @@ class PodcastService {
     },
   ));
   final XiaoyuzhouParserService? xiaoyuzhouParser;
+  final FreshRssService? freshRssService;
+  final StorageService? storageService;
 
-  PodcastService({this.xiaoyuzhouParser});
+  PodcastService({
+    this.xiaoyuzhouParser,
+    this.freshRssService,
+    this.storageService,
+  });
 
   Future<List<Podcast>> searchPodcasts(String term, {String? genre}) async {
     try {
@@ -59,6 +68,23 @@ class PodcastService {
     if (feedUrl.startsWith('echopod://bilibili/')) {
       return _fetchBilibiliPseudoEpisodes(feedUrl);
     }
+
+    if (feedUrl.startsWith('freshrss://') &&
+        freshRssService != null &&
+        storageService != null) {
+      final config = await storageService!.getFreshRssConfig();
+      if (config['url'] != null &&
+          config['user'] != null &&
+          config['pass'] != null) {
+        freshRssService!
+            .configure(config['url']!, config['user']!, config['pass']!);
+        // Pass the full URL, let service handle stripping if needed, or strip here
+        // Since FreshRssService.fetchEpisodes expects feedId or freshrss://feedId
+        return freshRssService!.fetchEpisodes(feedUrl);
+      }
+      return [];
+    }
+
     try {
       final response = await _dio.get(feedUrl);
       final xmlString = response.data.toString();
@@ -159,6 +185,23 @@ class PodcastService {
       print('Error fetching Bilibili pseudo episodes: $e');
       return [];
     }
+  }
+
+  /// 批量获取本地订阅的最新剧集
+  Future<List<Episode>> fetchRecentEpisodesFromLocal(List<Podcast> localSubs,
+      {int episodesPerPodcast = 5}) async {
+    final List<Future<List<Episode>>> futures = localSubs.map((podcast) async {
+      try {
+        final episodes = await fetchEpisodes(podcast.feedUrl);
+        return episodes.take(episodesPerPodcast).toList();
+      } catch (e) {
+        debugPrint('Error fetching episodes for ${podcast.title}: $e');
+        return <Episode>[];
+      }
+    }).toList();
+
+    final results = await Future.wait(futures);
+    return results.expand((element) => element).toList();
   }
 
   Future<Podcast?> fetchPodcastMetadata(String feedUrl) async {

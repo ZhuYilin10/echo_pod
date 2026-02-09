@@ -18,7 +18,8 @@ class WorldScreen extends ConsumerStatefulWidget {
   ConsumerState<WorldScreen> createState() => _WorldScreenState();
 }
 
-class _WorldScreenState extends ConsumerState<WorldScreen> {
+class _WorldScreenState extends ConsumerState<WorldScreen>
+    with AutomaticKeepAliveClientMixin {
   // Indices to select: randomly 5 from top 30
   late final List<int> _selectedIndices;
 
@@ -42,6 +43,9 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
   int _displayCount = 20;
   bool _isLoadingMore = false;
   static const int _pageSize = 20;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
@@ -104,6 +108,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     // Watch the providers
     final trendingAsync = ref.watch(trendingEpisodesProvider);
     final contentAsync = _selectedGenreId == 'trending_episodes'
@@ -111,6 +116,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
         : ref.watch(genrePodcastsProvider(_selectedGenreId));
 
     return Scaffold(
+      key: const PageStorageKey('world_screen'),
       body: RefreshIndicator(
         onRefresh: _onRefresh,
         child: CustomScrollView(
