@@ -1,10 +1,11 @@
-import 'shelf/shelf_screen.dart';
-import 'components/floaty_nav_bar/floaty_nav_bar.dart';
+import 'package:cupertino_native_better/cupertino_native_better.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/providers.dart';
 import '../services/web_podcast_service.dart';
 import 'discovery/discovery_screen.dart';
+import 'shelf/shelf_screen.dart';
+import 'world/world_screen.dart';
 
 class MainNavigationWrapper extends ConsumerStatefulWidget {
   const MainNavigationWrapper({super.key});
@@ -19,7 +20,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
 
   final List<Widget> _screens = [
     const ShelfScreen(),
-    const DiscoveryScreen(),
+    const WorldScreen(),
   ];
 
   @override
@@ -38,23 +39,27 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
     return Scaffold(
       extendBody: true,
       body: _screens[_currentIndex],
-      bottomNavigationBar: FloatyNavBar(
-        selectedTab: _currentIndex,
-        shape: const CircleShape(),
-        tabs: [
-          FloatyTab(
-            isSelected: _currentIndex == 0,
-            onTap: () => setState(() => _currentIndex = 0),
-            title: '唱片架',
-            icon: const Icon(Icons.album_outlined),
+      bottomNavigationBar: CNTabBar(
+        items: const [
+          CNTabBarItem(
+            label: '唱片架',
+            icon: CNSymbol('rectangle.on.rectangle'),
+            activeIcon: CNSymbol('rectangle.fill.on.rectangle.fill'),
           ),
-          FloatyTab(
-            isSelected: _currentIndex == 1,
-            onTap: () => setState(() => _currentIndex = 1),
-            title: '发现',
-            icon: const Icon(Icons.explore_outlined),
+          CNTabBarItem(
+            label: '世界',
+            icon: CNSymbol('globe'),
+            activeIcon: CNSymbol('globe'),
           ),
         ],
+        currentIndex: _currentIndex,
+        onTap: (index) => setState(() => _currentIndex = index),
+        searchItem: CNTabBarSearchItem(
+          placeholder: 'Search',
+          onSearchChanged: (query) {
+            // TODO: Implement search logic
+          },
+        ),
       ),
     );
   }
