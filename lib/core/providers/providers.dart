@@ -12,6 +12,19 @@ import '../../services/platform/live_activity_service.dart';
 import '../../services/download/download_service.dart';
 import '../../services/semantic_search_service.dart';
 import '../../services/xiaoyuzhou_parser_service.dart';
+import '../../services/freshrss_service.dart';
+
+final freshrssServiceProvider = Provider((ref) => FreshRssService());
+
+final freshrssEpisodesProvider = FutureProvider<List<Episode>>((ref) async {
+  final storage = ref.watch(storageServiceProvider);
+  final config = await storage.getFreshRssConfig();
+  if (config['url'] == null) return [];
+
+  final service = ref.read(freshrssServiceProvider);
+  service.configure(config['url']!, config['user']!, config['pass']!);
+  return service.fetchRecentEpisodes();
+});
 
 import '../../services/platform/widget_service.dart';
 import '../../services/platform/widget_content_manager.dart';

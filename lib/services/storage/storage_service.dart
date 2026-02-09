@@ -13,6 +13,25 @@ class StorageService {
   static const String _skipSilenceKey = 'skip_silence_enabled';
   static const String _podcastSpeedsKey = 'podcast_speeds';
   static const String _themeKey = 'app_theme_config';
+  static const String _freshrssUrlKey = 'freshrss_url';
+  static const String _freshrssUserKey = 'freshrss_user';
+  static const String _freshrssPassKey = 'freshrss_pass';
+
+  Future<void> saveFreshRssConfig(String url, String user, String pass) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_freshrssUrlKey, url);
+    await prefs.setString(_freshrssUserKey, user);
+    await prefs.setString(_freshrssPassKey, pass);
+  }
+
+  Future<Map<String, String?>> getFreshRssConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'url': prefs.getString(_freshrssUrlKey),
+      'user': prefs.getString(_freshrssUserKey),
+      'pass': prefs.getString(_freshrssPassKey),
+    };
+  }
 
   Future<void> savePodcastSpeed(String feedUrl, double speed) async {
     print('[SpeedLog] StorageService: Saving speed $speed for feed $feedUrl');

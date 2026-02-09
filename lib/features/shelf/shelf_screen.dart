@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
+import '../settings/freshrss_login_screen.dart';
 import 'widgets/record_player_panel.dart';
 import 'widgets/shelf_view_subscribed.dart';
 import 'widgets/shelf_view_downloaded.dart';
 import 'widgets/shelf_view_history.dart';
 import 'widgets/shelf_view_favorites.dart';
+import 'widgets/shelf_view_freshrss.dart';
 
 /// 唱片架页面
 class ShelfScreen extends ConsumerStatefulWidget {
@@ -58,12 +60,27 @@ class _ShelfScreenState extends ConsumerState<ShelfScreen> {
                       ),
                     ],
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.search_rounded),
-                    iconSize: 28,
-                    onPressed: () {
-                      // TODO: 实现搜索功能
-                    },
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.sync_rounded),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const FreshRssLoginScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.search_rounded),
+                        iconSize: 28,
+                        onPressed: () {
+                          // TODO: 实现搜索功能
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -89,6 +106,8 @@ class _ShelfScreenState extends ConsumerState<ShelfScreen> {
                   _buildTabButton('历史', 2, Icons.history),
                   const SizedBox(width: 8),
                   _buildTabButton('收藏', 3, Icons.favorite),
+                  const SizedBox(width: 8),
+                  _buildTabButton('FreshRSS', 4, Icons.rss_feed),
                 ],
               ),
             ),
@@ -176,6 +195,9 @@ class _ShelfScreenState extends ConsumerState<ShelfScreen> {
 
       case 3: // 收藏
         return const ShelfViewFavorites();
+
+      case 4: // FreshRSS
+        return const ShelfViewFreshRss();
 
       default:
         return const SliverFillRemaining(child: SizedBox.shrink());
