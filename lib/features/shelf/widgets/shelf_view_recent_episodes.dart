@@ -5,6 +5,7 @@ import 'package:m3e_collection/m3e_collection.dart';
 import '../../../../core/providers/providers.dart';
 import '../../../../core/models/episode.dart';
 import '../../episode_detail/episode_detail_screen.dart';
+import '../../player/player_screen.dart';
 
 class ShelfViewRecentEpisodes extends ConsumerWidget {
   const ShelfViewRecentEpisodes({super.key});
@@ -173,7 +174,7 @@ class ShelfViewRecentEpisodes extends ConsumerWidget {
                         children: [
                           GestureDetector(
                             onTap: () {
-                              audioHandler.playEpisode(episode);
+                              _playResolvedEpisode(context, ref, episode);
                             },
                             child: Row(
                               children: [
@@ -210,6 +211,68 @@ class ShelfViewRecentEpisodes extends ConsumerWidget {
         );
       },
     );
+  }
+
+  void _playResolvedEpisode(
+      BuildContext context, WidgetRef ref, Episode episode) async {
+    final podcastService = ref.read(podcastServiceProvider);
+    final audioHandler = ref.read(audioHandlerProvider);
+
+    if (episode.audioUrl == null ||
+        episode.audioUrl!.isEmpty ||
+        episode.audioUrl!.contains('xiaoyuzhoufm.com')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white)),
+              SizedBox(width: 12),
+              Text('正在解析音频地址...'),
+            ],
+          ),
+          duration: Duration(seconds: 5),
+        ),
+      );
+
+      try {
+        final resolved = await podcastService.resolveEpisodeUrl(episode);
+        if (context.mounted) ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+        if (resolved != null && resolved.audioUrl != null) {
+          audioHandler.playEpisode(resolved);
+          // 跳转到播放器
+          if (context.mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => PlayerScreen(episode: resolved)),
+            );
+          }
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('解析失败，请尝试搜索该播客后播放')),
+            );
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('解析出错: $e')),
+          );
+        }
+      }
+    } else {
+      audioHandler.playEpisode(episode);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)),
+      );
+    }
   }
 
   String _formatDuration(Duration duration) {
