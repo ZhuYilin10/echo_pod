@@ -305,12 +305,14 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             GestureDetector(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) =>
-                                        PlayerScreen(episode: _displayEpisode)),
-                              ),
+                              onTap: _displayEpisode.hasAudio
+                                  ? () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => PlayerScreen(
+                                                episode: _displayEpisode)),
+                                      )
+                                  : null,
                               child: Text(
                                 _displayEpisode.title,
                                 style: Theme.of(context)
@@ -333,57 +335,74 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                           ],
                         ),
                       ),
-                      StreamBuilder<MediaItem?>(
-                        stream: audioHandler.mediaItem,
-                        builder: (context, snapshot) {
-                          final isCurrent =
-                              snapshot.data?.id == _displayEpisode.guid;
-                          return StreamBuilder<PlaybackState>(
-                            stream: audioHandler.playbackState,
-                            builder: (context, playbackSnapshot) {
-                              final playing =
-                                  playbackSnapshot.data?.playing ?? false;
-                              final isBusy = isCurrent && playing;
+                      _displayEpisode.hasAudio
+                          ? StreamBuilder<MediaItem?>(
+                              stream: audioHandler.mediaItem,
+                              builder: (context, snapshot) {
+                                final isCurrent =
+                                    snapshot.data?.id == _displayEpisode.guid;
+                                return StreamBuilder<PlaybackState>(
+                                  stream: audioHandler.playbackState,
+                                  builder: (context, playbackSnapshot) {
+                                    final playing =
+                                        playbackSnapshot.data?.playing ?? false;
+                                    final isBusy = isCurrent && playing;
 
-                              return Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  if (isCurrent)
-                                    SizedBox(
-                                      width: 54,
-                                      height: 54,
-                                      child: CircularProgressIndicatorM3E(
-                                        value: _calculateProgress(
-                                            playbackSnapshot.data,
-                                            snapshot.data),
-                                        activeColor: colorScheme.primary,
-                                        size: CircularProgressM3ESize.m,
-                                      ),
-                                    ),
-                                  IconButton(
-                                    icon: Icon(
-                                      isBusy
-                                          ? Icons.pause_circle_filled
-                                          : Icons.play_circle_filled,
-                                      size: 48,
-                                    ),
-                                    onPressed: () {
-                                      if (isCurrent) {
-                                        playing
-                                            ? audioHandler.pause()
-                                            : audioHandler.play();
-                                      } else {
-                                        _playResolvedEpisode(
-                                            context, ref, _displayEpisode);
-                                      }
-                                    },
+                                    return Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        if (isCurrent)
+                                          SizedBox(
+                                            width: 54,
+                                            height: 54,
+                                            child: CircularProgressIndicatorM3E(
+                                              value: _calculateProgress(
+                                                  playbackSnapshot.data,
+                                                  snapshot.data),
+                                              activeColor: colorScheme.primary,
+                                              size: CircularProgressM3ESize.m,
+                                            ),
+                                          ),
+                                        IconButton(
+                                          icon: Icon(
+                                            isBusy
+                                                ? Icons.pause_circle_filled
+                                                : Icons.play_circle_filled,
+                                            size: 48,
+                                          ),
+                                          onPressed: () {
+                                            if (isCurrent) {
+                                              playing
+                                                  ? audioHandler.pause()
+                                                  : audioHandler.play();
+                                            } else {
+                                              _playResolvedEpisode(context, ref,
+                                                  _displayEpisode);
+                                            }
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                              },
+                            )
+                          : _displayEpisode.articleUrl != null
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.article_outlined,
+                                    size: 48,
+                                    color: colorScheme.primary,
                                   ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                      ),
+                                  onPressed: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              '打开文章: ${_displayEpisode.articleUrl}')),
+                                    );
+                                  },
+                                )
+                              : const SizedBox(width: 48),
                     ],
                   ),
                 const SizedBox(height: 24),

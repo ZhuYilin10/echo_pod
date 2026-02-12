@@ -8,6 +8,7 @@ class Episode {
   final String? imageUrl;
   final String podcastTitle;
   final String podcastFeedUrl;
+  final String? articleUrl;
 
   Episode({
     required this.guid,
@@ -19,7 +20,10 @@ class Episode {
     this.imageUrl,
     required this.podcastTitle,
     required this.podcastFeedUrl,
+    this.articleUrl,
   });
+
+  bool get hasAudio => audioUrl != null && audioUrl!.isNotEmpty;
 
   Map<String, dynamic> toJson() => {
         'guid': guid,
@@ -31,6 +35,7 @@ class Episode {
         'imageUrl': imageUrl,
         'podcastTitle': podcastTitle,
         'podcastFeedUrl': podcastFeedUrl,
+        'articleUrl': articleUrl,
       };
 
   factory Episode.fromJson(Map<String, dynamic> json) => Episode(
@@ -44,6 +49,7 @@ class Episode {
         imageUrl: json['imageUrl'],
         podcastTitle: json['podcastTitle'],
         podcastFeedUrl: json['podcastFeedUrl'] ?? '',
+        articleUrl: json['articleUrl'],
       );
   Episode copyWith({
     String? guid,
@@ -55,6 +61,7 @@ class Episode {
     String? imageUrl,
     String? podcastTitle,
     String? podcastFeedUrl,
+    String? articleUrl,
   }) {
     return Episode(
       guid: guid ?? this.guid,
@@ -66,6 +73,7 @@ class Episode {
       imageUrl: imageUrl ?? this.imageUrl,
       podcastTitle: podcastTitle ?? this.podcastTitle,
       podcastFeedUrl: podcastFeedUrl ?? this.podcastFeedUrl,
+      articleUrl: articleUrl ?? this.articleUrl,
     );
   }
 }

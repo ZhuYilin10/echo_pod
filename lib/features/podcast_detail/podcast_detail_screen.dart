@@ -344,66 +344,82 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                 ),
         ),
       ),
-      trailing: StreamBuilder<MediaItem?>(
-          stream: ref.watch(audioHandlerProvider).mediaItem,
-          builder: (context, mediaSnapshot) {
-            final currentMediaItem = mediaSnapshot.data;
-            final isSameEpisode = currentMediaItem?.id == episode.guid;
+      trailing: episode.hasAudio
+          ? StreamBuilder<MediaItem?>(
+              stream: ref.watch(audioHandlerProvider).mediaItem,
+              builder: (context, mediaSnapshot) {
+                final currentMediaItem = mediaSnapshot.data;
+                final isSameEpisode = currentMediaItem?.id == episode.guid;
 
-            return StreamBuilder<PlaybackState>(
-                stream: ref.watch(audioHandlerProvider).playbackState,
-                builder: (context, playbackSnapshot) {
-                  final playing = playbackSnapshot.data?.playing ?? false;
-                  final isPlayingThis = isSameEpisode && playing;
+                return StreamBuilder<PlaybackState>(
+                    stream: ref.watch(audioHandlerProvider).playbackState,
+                    builder: (context, playbackSnapshot) {
+                      final playing = playbackSnapshot.data?.playing ?? false;
+                      final isPlayingThis = isSameEpisode && playing;
 
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.playlist_add_rounded, size: 24),
-                        onPressed: () {
-                          final handler = ref.read(audioHandlerProvider);
-                          handler.addQueueItem(MediaItem(
-                            id: episode.guid,
-                            album: episode.podcastTitle,
-                            title: episode.title,
-                            artUri: episode.imageUrl != null
-                                ? Uri.parse(episode.imageUrl!)
-                                : null,
-                            extras: episode.toJson(),
-                          ));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('已加入播放列表'),
-                                duration: Duration(seconds: 1)),
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          isPlayingThis
-                              ? Icons.pause_circle_outline
-                              : Icons.play_circle_outline,
-                          size: 28,
-                        ),
-                        color: Colors.indigoAccent,
-                        onPressed: () {
-                          final handler = ref.read(audioHandlerProvider);
-                          if (isSameEpisode) {
-                            if (playing) {
-                              handler.pause();
-                            } else {
-                              handler.play();
-                            }
-                          } else {
-                            handler.playEpisode(episode);
-                          }
-                        },
-                      ),
-                    ],
-                  );
-                });
-          }),
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.playlist_add_rounded,
+                                size: 24),
+                            onPressed: () {
+                              final handler = ref.read(audioHandlerProvider);
+                              handler.addQueueItem(MediaItem(
+                                id: episode.guid,
+                                album: episode.podcastTitle,
+                                title: episode.title,
+                                artUri: episode.imageUrl != null
+                                    ? Uri.parse(episode.imageUrl!)
+                                    : null,
+                                extras: episode.toJson(),
+                              ));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('已加入播放列表'),
+                                    duration: Duration(seconds: 1)),
+                              );
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              isPlayingThis
+                                  ? Icons.pause_circle_outline
+                                  : Icons.play_circle_outline,
+                              size: 28,
+                            ),
+                            color: Colors.indigoAccent,
+                            onPressed: () {
+                              final handler = ref.read(audioHandlerProvider);
+                              if (isSameEpisode) {
+                                if (playing) {
+                                  handler.pause();
+                                } else {
+                                  handler.play();
+                                }
+                              } else {
+                                handler.playEpisode(episode);
+                              }
+                            },
+                          ),
+                        ],
+                      );
+                    });
+              })
+          : episode.articleUrl != null
+              ? IconButton(
+                  icon: Icon(
+                    Icons.article_outlined,
+                    size: 28,
+                    color: Colors.indigoAccent,
+                  ),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('打开文章: ${episode.articleUrl}')),
+                    );
+                  },
+                )
+              : null,
       onTap: () {
         Navigator.push(
           context,

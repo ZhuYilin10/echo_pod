@@ -190,7 +190,29 @@ class FreshRssService {
         debugPrint(
             'FreshRSS: Fetched ${items.length} items for feed $cleanFeedId');
         return items.map((item) {
-          final enclosure = (item['enclosure'] as List?)?.firstOrNull;
+          final enclosures = item['enclosure'] as List?;
+
+          // Check if there's an audio enclosure
+          String? audioUrl;
+          if (enclosures != null) {
+            for (var enc in enclosures) {
+              if (enc['type']?.toString().startsWith('audio/') == true) {
+                audioUrl = enc['href'];
+                break;
+              }
+            }
+          }
+
+          // For non-audio content, get the article URL from canonical or alternate
+          String? articleUrl;
+          if (audioUrl == null) {
+            final canonical = (item['canonical'] as List?)?.firstOrNull;
+            articleUrl = canonical?['href'];
+            if (articleUrl == null) {
+              final alternate = (item['alternate'] as List?)?.firstOrNull;
+              articleUrl = alternate?['href'];
+            }
+          }
 
           String? imageUrl = item['visualUrl'];
           if (imageUrl == null &&
@@ -198,8 +220,8 @@ class FreshRssService {
               (item['thumbnail'] as List).isNotEmpty) {
             imageUrl = item['thumbnail'][0]['url'];
           }
-          if (imageUrl == null && item['enclosure'] is List) {
-            for (var enc in item['enclosure']) {
+          if (imageUrl == null && enclosures != null) {
+            for (var enc in enclosures) {
               if (enc['type']?.toString().startsWith('image/') == true) {
                 imageUrl = enc['href'];
                 break;
@@ -231,11 +253,12 @@ class FreshRssService {
                 item['summary']?['content'] ?? item['content']?['content'],
             pubDate: DateTime.fromMillisecondsSinceEpoch(
                 (item['published'] ?? 0) * 1000),
-            audioUrl: enclosure?['href'],
+            audioUrl: audioUrl,
             imageUrl: imageUrl,
             podcastTitle: item['origin']?['title'] ?? '',
             podcastFeedUrl:
                 'freshrss://${item['origin']?['streamId']?.replaceFirst('feed/', '') ?? ''}',
+            articleUrl: articleUrl,
           );
         }).toList();
       }
@@ -295,7 +318,29 @@ class FreshRssService {
               'FreshRSS Stream Item Data Sample (First Item): ${items.first}');
         }
         return items.map((item) {
-          final enclosure = (item['enclosure'] as List?)?.firstOrNull;
+          final enclosures = item['enclosure'] as List?;
+
+          // Check if there's an audio enclosure
+          String? audioUrl;
+          if (enclosures != null) {
+            for (var enc in enclosures) {
+              if (enc['type']?.toString().startsWith('audio/') == true) {
+                audioUrl = enc['href'];
+                break;
+              }
+            }
+          }
+
+          // For non-audio content, get the article URL from canonical or alternate
+          String? articleUrl;
+          if (audioUrl == null) {
+            final canonical = (item['canonical'] as List?)?.firstOrNull;
+            articleUrl = canonical?['href'];
+            if (articleUrl == null) {
+              final alternate = (item['alternate'] as List?)?.firstOrNull;
+              articleUrl = alternate?['href'];
+            }
+          }
 
           // Try to find an image URL from various potential fields
           // 1. Check for specific extension fields first
@@ -309,8 +354,8 @@ class FreshRssService {
           }
 
           // 3. Check enclosures (podcasts often use this for cover art)
-          if (imageUrl == null && item['enclosure'] is List) {
-            for (var enc in item['enclosure']) {
+          if (imageUrl == null && enclosures != null) {
+            for (var enc in enclosures) {
               if (enc['type']?.toString().startsWith('image/') == true) {
                 imageUrl = enc['href'];
                 break;
@@ -346,11 +391,12 @@ class FreshRssService {
                 item['summary']?['content'] ?? item['content']?['content'],
             pubDate: DateTime.fromMillisecondsSinceEpoch(
                 (item['published'] ?? 0) * 1000),
-            audioUrl: enclosure?['href'],
+            audioUrl: audioUrl,
             imageUrl: imageUrl,
             podcastTitle: item['origin']?['title'] ?? '',
             podcastFeedUrl:
                 'freshrss://${item['origin']?['streamId']?.replaceFirst('feed/', '') ?? ''}',
+            articleUrl: articleUrl,
           );
         }).toList();
       }

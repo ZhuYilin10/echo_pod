@@ -142,26 +142,53 @@ class ShelfViewHistory extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          _playEpisode(context, ref, episode);
-                        },
-                        child: Row(
-                          children: [
-                            Icon(Icons.play_circle_outline,
-                                size: 16, color: Colors.grey[700]),
-                            const SizedBox(width: 4),
-                            Text(
-                              '重新播放',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[700],
-                                fontWeight: FontWeight.w500,
+                      episode.hasAudio
+                          ? GestureDetector(
+                              onTap: () {
+                                _playEpisode(context, ref, episode);
+                              },
+                              child: Row(
+                                children: [
+                                  Icon(Icons.play_circle_outline,
+                                      size: 16, color: Colors.grey[700]),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '重新播放',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey[700],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
+                            )
+                          : episode.articleUrl != null
+                              ? GestureDetector(
+                                  onTap: () {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content: Text(
+                                              '打开文章: ${episode.articleUrl}')),
+                                    );
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.article_outlined,
+                                          size: 16, color: Colors.grey[700]),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '阅读文章',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey[700],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : const SizedBox(),
                     ],
                   ),
                 ],

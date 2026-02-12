@@ -170,31 +170,52 @@ class ShelfViewRecentEpisodes extends ConsumerWidget {
                       ),
                       const SizedBox(height: 8),
 
-                      // 播放控制和剩余时间
+                      // 播放控制或阅读按钮
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          GestureDetector(
-                            onTap: () {
-                              _playResolvedEpisode(context, ref, episode);
-                            },
-                            child: Row(
-                              children: [
-                                Icon(Icons.play_circle_outline,
-                                    size: 16, color: Colors.grey[700]),
-                                const SizedBox(width: 4),
-                                Text(
-                                  progress > 0 ? '继续播放' : '立即播放',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey[700],
-                                    fontWeight: FontWeight.w500,
+                          episode.hasAudio
+                              ? GestureDetector(
+                                  onTap: () {
+                                    _playResolvedEpisode(context, ref, episode);
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.play_circle_outline,
+                                          size: 16, color: Colors.grey[700]),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        progress > 0 ? '继续播放' : '立即播放',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey[700],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : GestureDetector(
+                                  onTap: () {
+                                    _openArticle(context, episode);
+                                  },
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.article_outlined,
+                                          size: 16, color: Colors.grey[700]),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '阅读文章',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey[700],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          if (duration.inSeconds > 0)
+                          if (duration.inSeconds > 0 && episode.hasAudio)
                             Text(
                               '剩余 ${_formatDuration(remaining)}',
                               style: TextStyle(
@@ -213,6 +234,15 @@ class ShelfViewRecentEpisodes extends ConsumerWidget {
         );
       },
     );
+  }
+
+  void _openArticle(BuildContext context, Episode episode) {
+    if (episode.articleUrl != null) {
+      // TODO: 打开文章网页或使用内置浏览器
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('打开文章: ${episode.articleUrl}')),
+      );
+    }
   }
 
   void _playResolvedEpisode(
