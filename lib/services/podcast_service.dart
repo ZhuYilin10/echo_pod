@@ -320,7 +320,7 @@ class PodcastService {
                   imageUrl: item['logoURL'],
                   description: 'Play count: ${item['playCount'] ?? 0}',
                   podcastFeedUrl: '',
-                  audioUrl: null,
+                  audioUrl: guid.contains('xiaoyuzhoufm.com') ? guid : null,
                   pubDate: item['postTime'] != null
                       ? DateTime.tryParse(item['postTime'])
                       : null,
