@@ -597,9 +597,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
                                 padding: EdgeInsets.zero,
                                 iconSize: 20,
                                 onPressed: () {
-                                  ref
-                                      .read(audioHandlerProvider)
-                                      .playEpisode(episode);
+                                  _playResolvedEpisode(context, ref, episode);
                                 },
                               ),
                             ),
@@ -657,6 +655,58 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
       return url.replaceFirst('100x100bb.jpg', '500x500bb.jpg');
     }
     return url;
+  }
+
+  void _playResolvedEpisode(
+      BuildContext context, WidgetRef ref, Episode episode) async {
+    final podcastService = ref.read(podcastServiceProvider);
+    final audioHandler = ref.read(audioHandlerProvider);
+
+    if (episode.audioUrl == null ||
+        episode.audioUrl!.isEmpty ||
+        episode.audioUrl!.contains('xiaoyuzhoufm.com')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white)),
+              SizedBox(width: 12),
+              Text('正在解析小宇宙音频地址...'),
+            ],
+          ),
+          duration: Duration(seconds: 10),
+        ),
+      );
+
+      try {
+        final resolved = await podcastService.resolveEpisodeUrl(episode);
+        if (context.mounted)
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+        if (resolved != null && resolved.audioUrl != null) {
+          audioHandler.playEpisode(resolved);
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('解析失败，请尝试点击详情后重试')),
+            );
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('解析出错: $e')),
+          );
+        }
+      }
+    } else {
+      audioHandler.playEpisode(episode);
+    }
   }
 
   // Helper for decoration since Container handles it but we want standalone gradient sometimes
