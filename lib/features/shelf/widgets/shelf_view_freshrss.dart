@@ -92,7 +92,7 @@ class ShelfViewFreshRss extends ConsumerWidget {
                     subtitle: Text(episode.podcastTitle),
                     trailing: const Icon(Icons.play_circle_outline),
                     onTap: () {
-                      // TODO: Play episode
+                      ref.read(audioHandlerProvider).playEpisode(episode);
                     },
                   );
                 },

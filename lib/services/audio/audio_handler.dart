@@ -452,6 +452,22 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
   void _handleEpisodeCompleted() async {
     if (queue.value.isNotEmpty) {
+      final completedEpisode = _currentEpisode;
+
+      // Notify FreshRSS if applicable
+      if (completedEpisode != null &&
+          completedEpisode.podcastFeedUrl.startsWith('freshrss://')) {
+        print('[FreshRSS] Marking episode as read on server: ${completedEpisode.guid}');
+        // We don't await this to avoid blocking the queue transition
+        _storageService.getFreshRssConfig().then((config) {
+          if (config['url'] != null) {
+            final frService = FreshRssService();
+            frService.configure(config['url']!, config['user']!, config['pass']!);
+            frService.markAsRead(completedEpisode.guid);
+          }
+        });
+      }
+
       // Current playing is at index 0. Remove it.
       await removeQueueItemAt(0);
 

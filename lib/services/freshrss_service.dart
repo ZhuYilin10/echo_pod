@@ -244,7 +244,28 @@ class FreshRssService {
     }
   }
 
-  Future<List<Episode>> fetchRecentEpisodes({int limit = 50}) async {
+  Future<bool> markAsRead(String episodeId) async {
+    if (_authToken == null) await login();
+    if (_authToken == null) return false;
+
+    try {
+      final response = await _dio.post(
+        '${_baseUrl}api/greader.php/reader/api/0/edit-tag',
+        queryParameters: {
+          'a': 'user/-/state/com.google/read',
+          'i': episodeId,
+          'T': _authToken, // GReader often requires the token in T param for POST
+        },
+        options: Options(headers: {
+          'Authorization': 'GoogleLogin auth=$_authToken',
+        }),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('FreshRSS Mark As Read Error: $e');
+      return false;
+    }
+  }
     if (_authToken == null) await login();
     if (_authToken == null) return [];
 
