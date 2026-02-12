@@ -9,6 +9,8 @@ import '../podcast_detail/podcast_detail_screen.dart';
 import '../player/player_screen.dart';
 import '../common/download_button.dart';
 import 'package:m3e_collection/m3e_collection.dart';
+import '../../core/utils/image_utils.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class EpisodeDetailScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -289,8 +291,9 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
                             image: DecorationImage(
-                              image:
-                                  NetworkImage(_displayEpisode.imageUrl ?? ''),
+                              image: CachedNetworkImageProvider(
+                                  ImageUtils.getHighResUrl(
+                                      _displayEpisode.imageUrl)),
                               fit: BoxFit.cover,
                             ),
                           ),
@@ -504,8 +507,9 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(24),
                           child: widget.episode.imageUrl != null
-                              ? Image.network(
-                                  widget.episode.imageUrl!,
+                              ? CachedNetworkImage(
+                                  imageUrl: ImageUtils.getHighResUrl(
+                                      widget.episode.imageUrl),
                                   fit: BoxFit.cover,
                                 )
                               : Container(
@@ -528,15 +532,18 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      Text(
-                        widget.episode.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                        child: Text(
+                          widget.episode.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(

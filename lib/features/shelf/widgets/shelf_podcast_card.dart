@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/utils/image_utils.dart';
 import '../../../core/models/podcast.dart';
 import '../../podcast_detail/podcast_detail_screen.dart';
 
@@ -39,11 +41,11 @@ class ShelfPodcastCard extends StatelessWidget {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(12),
                     ),
-                    child: Image.network(
-                      podcast.imageUrl ?? '',
+                    child: CachedNetworkImage(
+                      imageUrl: ImageUtils.getHighResUrl(podcast.imageUrl),
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorWidget: (_, __, ___) => Container(
                         color: Colors.grey[800],
                         child: const Center(
                           child: Icon(

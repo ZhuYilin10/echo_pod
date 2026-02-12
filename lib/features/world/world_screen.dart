@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/models/podcast.dart';
 import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
+import '../../core/utils/image_utils.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
 import '../search/search_screen.dart';
@@ -94,12 +95,18 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
   }
 
   Future<void> _onRefresh() async {
-    // Refresh trending episodes for carousel
+    debugPrint('WorldScreen: Force refreshing...');
+    // 1. Force network refresh for trending episodes
+    final podcastService = ref.read(podcastServiceProvider);
+    await podcastService.fetchTrendingEpisodes(forceRefresh: true);
+
+    // 2. Refresh trending episodes provider to reload from cache
     ref.invalidate(trendingEpisodesProvider);
 
-    // Refresh content provider
+    // 3. Refresh content provider
     if (_selectedGenreId == 'trending_episodes') {
-      await ref.refresh(trendingEpisodesProvider.future);
+      // Since we just refreshed the cache, this will pick up new data
+      await ref.read(trendingEpisodesProvider.future);
     } else {
       await ref.refresh(genrePodcastsProvider(_selectedGenreId).future);
     }
@@ -199,20 +206,23 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
                         child: CarouselView(
                           itemExtent: 300,
                           shrinkExtent: 100,
-                          children:
-                              selectedEpisodes.asMap().entries.map((entry) {
-                            final index = entry.key;
-                            final episode = entry.value;
-                            return GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (context) =>
-                                        EpisodeDetailScreen(episode: episode),
-                                  ));
-                                },
-                                child: _buildCarouselItem(
-                                    context, episode, index));
-                          }).toList(),
+                          onTap: (index) {
+                            final episode = selectedEpisodes[index];
+                            debugPrint(
+                                'WorldScreen: CarouselView onTap index=$index, episode=${episode.title}');
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    EpisodeDetailScreen(episode: episode),
+                              ),
+                            );
+                          },
+                          children: selectedEpisodes
+                              .asMap()
+                              .entries
+                              .map((entry) => _buildCarouselItem(
+                                  context, entry.value, entry.key))
+                              .toList(),
                         ),
                       ),
                     );
@@ -333,7 +343,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
                     // Image Layer with High-Res Logic and Fallback
                     if (hasImage)
                       CachedNetworkImage(
-                        imageUrl: _getHighResUrl(imageUrl),
+                        imageUrl: ImageUtils.getHighResUrl(imageUrl),
                         fit: BoxFit.cover,
                         errorWidget: (context, url, error) {
                           // Fallback to original URL if high-res fails
@@ -485,8 +495,8 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
                     borderRadius: BorderRadius.circular(24),
                     image: podcast.imageUrl != null
                         ? DecorationImage(
-                            image:
-                                NetworkImage(_getHighResUrl(podcast.imageUrl!)),
+                            image: CachedNetworkImageProvider(
+                                ImageUtils.getHighResUrl(podcast.imageUrl)),
                             fit: BoxFit.cover,
                           )
                         : null,
@@ -548,40 +558,13 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
                                 episode.imageUrl!.isNotEmpty)
                             ? DecorationImage(
                                 image: CachedNetworkImageProvider(
-                                    _getHighResUrl(episode.imageUrl!)),
+                                    ImageUtils.getHighResUrl(episode.imageUrl)),
                                 fit: BoxFit.cover,
                               )
                             : null,
                         color: Theme.of(context)
                             .colorScheme
                             .surfaceContainerHighest,
-                      ),
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            right: 8,
-                            bottom: 8,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surface
-                                    .withOpacity(0.8),
-                                shape: BoxShape.circle,
-                              ),
-                              child: IconButton(
-                                icon: const Icon(Icons.play_arrow_rounded),
-                                constraints: const BoxConstraints.tightFor(
-                                    width: 36, height: 36),
-                                padding: EdgeInsets.zero,
-                                iconSize: 20,
-                                onPressed: () {
-                                  _playResolvedEpisode(context, ref, episode);
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
@@ -627,13 +610,6 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
         );
       },
     );
-  }
-
-  String _getHighResUrl(String url) {
-    if (url.contains('100x100bb.jpg')) {
-      return url.replaceFirst('100x100bb.jpg', '500x500bb.jpg');
-    }
-    return url;
   }
 
   void _playResolvedEpisode(

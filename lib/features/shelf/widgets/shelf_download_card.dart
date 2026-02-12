@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/utils/image_utils.dart';
 import '../../../core/models/episode.dart';
 import '../../../core/providers/providers.dart';
 
@@ -57,12 +59,12 @@ class ShelfDownloadCard extends ConsumerWidget {
               // 封面图片
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: Image.network(
-                  episode.imageUrl ?? '',
+                child: CachedNetworkImage(
+                  imageUrl: ImageUtils.getHighResUrl(episode.imageUrl),
                   width: 80,
                   height: 80,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorWidget: (_, __, ___) => Container(
                     width: 80,
                     height: 80,
                     color: Colors.grey[200],

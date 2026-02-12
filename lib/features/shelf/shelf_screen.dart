@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
+import '../../services/podcast_service.dart';
+import '../../services/storage/storage_service.dart';
 import '../settings/freshrss_login_screen.dart';
 import 'widgets/record_player_panel.dart';
 import 'widgets/shelf_view_subscribed.dart';
@@ -38,6 +40,13 @@ class _ShelfScreenState extends ConsumerState<ShelfScreen>
         onRefresh: () async {
           switch (_selectedTab) {
             case 0:
+              // 强制刷新本地订阅缓存
+              final podcastService = ref.read(podcastServiceProvider);
+              final storage = ref.read(storageServiceProvider);
+              final subs = await storage.getSubscriptions();
+              await podcastService.fetchRecentEpisodesFromLocal(subs,
+                  forceRefresh: true);
+
               ref.invalidate(unifiedRecentEpisodesProvider);
               ref.invalidate(freshrssEpisodesProvider);
               await ref.read(unifiedRecentEpisodesProvider.future);

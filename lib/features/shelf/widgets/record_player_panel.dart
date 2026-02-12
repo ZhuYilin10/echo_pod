@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_service/audio_service.dart';
 import '../../../core/providers/providers.dart';
 import '../../player/player_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../../core/utils/image_utils.dart';
 
 /// 唱片播放面板组件
 class RecordPlayerPanel extends ConsumerWidget {
@@ -76,10 +78,11 @@ class RecordPlayerPanel extends ConsumerWidget {
                           child: AspectRatio(
                             aspectRatio: 1.6, // 增大比例，让高度更矮
                             child: mediaItem?.artUri != null
-                                ? Image.network(
-                                    mediaItem!.artUri.toString(),
+                                ? CachedNetworkImage(
+                                    imageUrl: ImageUtils.getHighResUrl(
+                                        mediaItem!.artUri.toString()),
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
+                                    errorWidget: (_, __, ___) =>
                                         _buildDefaultCover(),
                                   )
                                 : _buildDefaultCover(),

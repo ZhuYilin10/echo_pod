@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:audio_service/audio_service.dart';
 import '../../core/providers/providers.dart';
+import '../../services/podcast_service.dart';
+import '../../services/storage/storage_service.dart';
 import '../../core/models/episode.dart';
 import '../../core/models/podcast.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
@@ -125,6 +127,13 @@ class HomeScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
+          // 1. 强制刷新所有订阅源并更新缓存
+          final podcastService = ref.read(podcastServiceProvider);
+          final subsAsync = await ref.read(subscriptionsProvider.future);
+          await podcastService.fetchRecentEpisodesFromLocal(subsAsync,
+              forceRefresh: true, episodesPerPodcast: 3);
+
+          // 2. 通知 UI 重新读取（此时会命中刚更新的缓存）
           ref.invalidate(subscriptionsProvider);
           ref.invalidate(recentSubscribedEpisodesProvider);
         },

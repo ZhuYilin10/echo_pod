@@ -14,7 +14,9 @@ import '../podcast_detail/podcast_detail_screen.dart';
 import '../common/download_button.dart';
 import '../../services/web_podcast_service.dart';
 import '../../services/storage/storage_service.dart';
+import '../../core/utils/image_utils.dart';
 import 'package:m3e_collection/m3e_collection.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   final Episode episode;
@@ -145,11 +147,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       borderRadius: BorderRadius.circular(16),
                       child: AspectRatio(
                         aspectRatio: 1,
-                        child: Image.network(
-                          widget.episode.imageUrl ?? '',
+                        child: CachedNetworkImage(
+                          imageUrl:
+                              ImageUtils.getHighResUrl(widget.episode.imageUrl),
                           width: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorWidget: (_, __, ___) => Container(
                             color: Colors.grey[900],
                             child: const Icon(Icons.music_note,
                                 color: Colors.white54, size: 48),

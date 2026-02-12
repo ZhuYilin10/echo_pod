@@ -115,16 +115,9 @@ final recentSubscribedEpisodesProvider =
   final podcastService = ref.watch(podcastServiceProvider);
   final subs = await storage.getSubscriptions();
 
-  // Fetch episodes in parallel for better performance
-  final results = await Future.wait(
-    subs.map((podcast) => podcastService.fetchEpisodes(podcast.feedUrl).then(
-          (episodes) => episodes.take(3).toList(),
-          onError: (_) =>
-              <Episode>[], // Ignore failed fetches for individual podcasts
-        )),
-  );
-
-  final List<Episode> allEpisodes = results.expand((e) => e).toList();
+  // Use the service method which handles caching
+  final allEpisodes = await podcastService.fetchRecentEpisodesFromLocal(subs,
+      episodesPerPodcast: 3);
 
   // Sort by date descending
   allEpisodes.sort((a, b) {

@@ -63,7 +63,25 @@ class PodcastService {
     }
   }
 
-  Future<List<Episode>> fetchEpisodes(String feedUrl) async {
+  Future<List<Episode>> fetchEpisodes(String feedUrl,
+      {bool forceRefresh = false}) async {
+    // 1. Try to load from cache if storage service is available and not forcing refresh
+    if (!forceRefresh && storageService != null) {
+      final cacheTime = await storageService!.getFeedCacheTime(feedUrl);
+      if (cacheTime != null) {
+        // Cache validity: 2 hours
+        final isExpired =
+            DateTime.now().difference(cacheTime) > const Duration(hours: 2);
+        if (!isExpired) {
+          final cachedEpisodes = await storageService!.getFeedCache(feedUrl);
+          if (cachedEpisodes != null && cachedEpisodes.isNotEmpty) {
+            debugPrint('Hit cache for $feedUrl');
+            return cachedEpisodes;
+          }
+        }
+      }
+    }
+
     // Check if it's a simulated RSS (Bilibili/YouTube pseudo-URL)
     if (feedUrl.startsWith('echopod://bilibili/')) {
       return _fetchBilibiliPseudoEpisodes(feedUrl);
@@ -88,13 +106,14 @@ class PodcastService {
     try {
       final response = await _dio.get(feedUrl);
       final xmlString = response.data.toString();
+      List<Episode> episodes = [];
 
       // Try to parse as Atom first if it looks like Atom
       if (xmlString.contains('<feed') &&
           xmlString.contains('http://www.w3.org/2005/Atom')) {
         try {
           final feed = AtomFeed.parse(xmlString);
-          return feed.items?.map((item) {
+          episodes = feed.items?.map((item) {
                 String? audioUrl;
                 // Find enclosure if exists
                 // Use where loop to avoid AtomLink construction lints
@@ -141,33 +160,43 @@ class PodcastService {
         }
       }
 
-      final feed = RssFeed.parse(response.data);
+      if (episodes.isEmpty) {
+        final feed = RssFeed.parse(response.data);
 
-      return feed.items?.map((item) {
-            String? audioUrl = item.enclosure?.url;
+        episodes = feed.items?.map((item) {
+              String? audioUrl = item.enclosure?.url;
 
-            // Fallback for RSS items without enclosure but with recognized video link
-            if (audioUrl == null) {
-              if (item.link != null &&
-                  (item.link!.contains('bilibili.com') ||
-                      item.link!.contains('youtube.com'))) {
-                audioUrl = item.link;
+              // Fallback for RSS items without enclosure but with recognized video link
+              if (audioUrl == null) {
+                if (item.link != null &&
+                    (item.link!.contains('bilibili.com') ||
+                        item.link!.contains('youtube.com'))) {
+                  audioUrl = item.link;
+                }
               }
-            }
 
-            return Episode(
-              guid: item.guid ?? item.link ?? item.title ?? '',
-              title: item.title ?? 'No Title',
-              description: item.description,
-              pubDate: item.pubDate,
-              audioUrl: audioUrl,
-              duration: item.itunes?.duration?.toString(),
-              imageUrl: item.itunes?.image?.href ?? feed.image?.url,
-              podcastTitle: feed.title ?? '',
-              podcastFeedUrl: feedUrl,
-            );
-          }).toList() ??
-          [];
+              return Episode(
+                guid: item.guid ?? item.link ?? item.title ?? '',
+                title: item.title ?? 'No Title',
+                description: item.description,
+                pubDate: item.pubDate,
+                audioUrl: audioUrl,
+                duration: item.itunes?.duration?.toString(),
+                imageUrl: item.itunes?.image?.href ?? feed.image?.url,
+                podcastTitle: feed.title ?? '',
+                podcastFeedUrl: feedUrl,
+              );
+            }).toList() ??
+            [];
+      }
+
+      // Save to cache
+      if (storageService != null && episodes.isNotEmpty) {
+        // Run in background to not block UI return
+        storageService!.saveFeedCache(feedUrl, episodes);
+      }
+
+      return episodes;
     } catch (e) {
       debugPrint('Error fetching episodes: $e');
       return [];
@@ -189,10 +218,11 @@ class PodcastService {
 
   /// 批量获取本地订阅的最新剧集
   Future<List<Episode>> fetchRecentEpisodesFromLocal(List<Podcast> localSubs,
-      {int episodesPerPodcast = 5}) async {
+      {int episodesPerPodcast = 5, bool forceRefresh = false}) async {
     final List<Future<List<Episode>>> futures = localSubs.map((podcast) async {
       try {
-        final episodes = await fetchEpisodes(podcast.feedUrl);
+        final episodes =
+            await fetchEpisodes(podcast.feedUrl, forceRefresh: forceRefresh);
         return episodes.take(episodesPerPodcast).toList();
       } catch (e) {
         debugPrint('Error fetching episodes for ${podcast.title}: $e');
@@ -277,7 +307,27 @@ class PodcastService {
     return null;
   }
 
-  Future<List<Episode>> fetchTrendingEpisodes() async {
+  Future<List<Episode>> fetchTrendingEpisodes(
+      {bool forceRefresh = false}) async {
+    const String cacheKey = 'trending_episodes_cache';
+
+    // 1. Try to load from cache
+    if (!forceRefresh && storageService != null) {
+      final cacheTime = await storageService!.getFeedCacheTime(cacheKey);
+      if (cacheTime != null) {
+        // Cache validity: 2 hours
+        final isExpired =
+            DateTime.now().difference(cacheTime) > const Duration(hours: 2);
+        if (!isExpired) {
+          final cachedEpisodes = await storageService!.getFeedCache(cacheKey);
+          if (cachedEpisodes != null && cachedEpisodes.isNotEmpty) {
+            debugPrint('Hit cache for Trending Episodes');
+            return cachedEpisodes;
+          }
+        }
+      }
+    }
+
     int attempts = 0;
     while (attempts < 3) {
       try {
@@ -336,6 +386,12 @@ class PodcastService {
             .toList();
 
         debugPrint('TrendingEpisodes: Parsed ${results.length} valid episodes');
+
+        // Save to cache
+        if (storageService != null && results.isNotEmpty) {
+          storageService!.saveFeedCache(cacheKey, results);
+        }
+
         return results;
       } catch (e) {
         debugPrint('Error fetching trending episodes (Attempt $attempts): $e');

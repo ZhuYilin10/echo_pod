@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:m3e_collection/m3e_collection.dart';
+import '../../../../core/utils/image_utils.dart';
 import '../../../../core/providers/providers.dart';
 import '../../../../core/models/episode.dart';
 import '../../episode_detail/episode_detail_screen.dart';
@@ -96,7 +97,8 @@ class ShelfViewRecentEpisodes extends ConsumerWidget {
                     color: Theme.of(context).colorScheme.surfaceVariant,
                     child: episode.imageUrl != null
                         ? CachedNetworkImage(
-                            imageUrl: episode.imageUrl!,
+                            imageUrl:
+                                ImageUtils.getHighResUrl(episode.imageUrl),
                             fit: BoxFit.cover,
                             errorWidget: (context, url, error) => const Icon(
                                 Icons.podcasts,
@@ -240,7 +242,8 @@ class ShelfViewRecentEpisodes extends ConsumerWidget {
 
       try {
         final resolved = await podcastService.resolveEpisodeUrl(episode);
-        if (context.mounted) ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        if (context.mounted)
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
         if (resolved != null && resolved.audioUrl != null) {
           audioHandler.playEpisode(resolved);
@@ -248,7 +251,8 @@ class ShelfViewRecentEpisodes extends ConsumerWidget {
           if (context.mounted) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => PlayerScreen(episode: resolved)),
+              MaterialPageRoute(
+                  builder: (context) => PlayerScreen(episode: resolved)),
             );
           }
         } else {

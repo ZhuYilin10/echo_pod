@@ -6,6 +6,8 @@ import '../../core/providers/providers.dart';
 import '../episode_detail/episode_detail_screen.dart';
 import 'package:audio_service/audio_service.dart'; // Import for PlaybackState and MediaItem
 import 'package:m3e_collection/m3e_collection.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/utils/image_utils.dart';
 
 class PodcastDetailScreen extends ConsumerStatefulWidget {
   final Podcast podcast;
@@ -171,9 +173,11 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
                   children: [
                     if (widget.podcast.imageUrl != null &&
                         widget.podcast.imageUrl!.isNotEmpty)
-                      Image.network(widget.podcast.imageUrl!,
+                      CachedNetworkImage(
+                          imageUrl: ImageUtils.getHighResUrl(
+                              widget.podcast.imageUrl!),
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorWidget: (_, __, ___) => Container(
                                 color: Colors.indigo.shade900,
                                 child: const Icon(Icons.podcasts,
                                     size: 80, color: Colors.white24),
@@ -321,11 +325,12 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(4),
           child: (episode.imageUrl != null && episode.imageUrl!.isNotEmpty)
-              ? Image.network(episode.imageUrl!,
+              ? CachedNetworkImage(
+                  imageUrl: ImageUtils.getHighResUrl(episode.imageUrl!),
                   width: 40,
                   height: 40,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorWidget: (_, __, ___) => Container(
                         width: 40,
                         height: 40,
                         color: Colors.grey[800],

@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/models/episode.dart';
 import '../../core/models/podcast.dart';
@@ -263,5 +265,50 @@ class StorageService {
     } catch (e) {
       return null;
     }
+  }
+
+  // --- File-based Cache Implementation ---
+
+  Future<File> _getCacheFile(String url) async {
+    final directory = await getApplicationDocumentsDirectory();
+    // 使用 hashCode 生成简单的文件名
+    final filename = 'feed_cache_${url.hashCode}.json';
+    return File('${directory.path}/$filename');
+  }
+
+  Future<void> saveFeedCache(String url, List<Episode> episodes) async {
+    try {
+      final file = await _getCacheFile(url);
+      final jsonStr = jsonEncode(episodes.map((e) => e.toJson()).toList());
+      await file.writeAsString(jsonStr);
+    } catch (e) {
+      print('Error saving cache for $url: $e');
+    }
+  }
+
+  Future<List<Episode>?> getFeedCache(String url) async {
+    try {
+      final file = await _getCacheFile(url);
+      if (await file.exists()) {
+        final jsonStr = await file.readAsString();
+        final List list = jsonDecode(jsonStr);
+        return list.map((e) => Episode.fromJson(e)).toList();
+      }
+    } catch (e) {
+      print('Error reading cache for $url: $e');
+    }
+    return null;
+  }
+
+  Future<DateTime?> getFeedCacheTime(String url) async {
+    try {
+      final file = await _getCacheFile(url);
+      if (await file.exists()) {
+        return await file.lastModified();
+      }
+    } catch (e) {
+      print('Error getting cache time for $url: $e');
+    }
+    return null;
   }
 }

@@ -5,6 +5,8 @@ import '../../core/providers/providers.dart';
 import 'player_screen.dart';
 import 'playlist_screen.dart';
 import '../../core/models/episode.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/utils/image_utils.dart';
 
 class MiniPlayer extends ConsumerWidget {
   const MiniPlayer({super.key});
@@ -103,12 +105,13 @@ class MiniPlayer extends ConsumerWidget {
                         tag: 'episode_artwork_${mediaItem.id}',
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            mediaItem.artUri?.toString() ?? '',
+                          child: CachedNetworkImage(
+                            imageUrl: ImageUtils.getHighResUrl(
+                                mediaItem.artUri?.toString()),
                             width: 50,
                             height: 50,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
+                            errorWidget: (_, __, ___) =>
                                 const Icon(Icons.podcasts),
                           ),
                         ),
