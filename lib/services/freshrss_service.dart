@@ -11,6 +11,8 @@ class FreshRssService {
     headers: {
       'User-Agent': 'EchoPod/1.0',
     },
+    connectTimeout: const Duration(seconds: 5),
+    receiveTimeout: const Duration(seconds: 10),
   ));
 
   String? _baseUrl;
@@ -254,7 +256,8 @@ class FreshRssService {
         queryParameters: {
           'a': 'user/-/state/com.google/read',
           'i': episodeId,
-          'T': _authToken, // GReader often requires the token in T param for POST
+          'T':
+              _authToken, // GReader often requires the token in T param for POST
         },
         options: Options(headers: {
           'Authorization': 'GoogleLogin auth=$_authToken',
@@ -266,6 +269,8 @@ class FreshRssService {
       return false;
     }
   }
+
+  Future<List<Episode>> fetchRecentEpisodes(int limit) async {
     if (_authToken == null) await login();
     if (_authToken == null) return [];
 

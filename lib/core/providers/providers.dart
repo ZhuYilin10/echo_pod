@@ -25,7 +25,7 @@ final freshrssEpisodesProvider = FutureProvider<List<Episode>>((ref) async {
 
   final service = ref.read(freshrssServiceProvider);
   service.configure(config['url']!, config['user']!, config['pass']!);
-  return service.fetchRecentEpisodes();
+  return service.fetchRecentEpisodes(50);
 });
 
 final freshrssSubscriptionsProvider =

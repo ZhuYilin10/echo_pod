@@ -146,8 +146,8 @@ class StorageService {
     // Remove if already exists to move to top
     history.removeWhere((e) => e.guid == episode.guid);
     history.insert(0, episode);
-    // Keep last 100 items
-    if (history.length > 100) history.removeLast();
+    // Keep last 300 items
+    if (history.length > 300) history.removeLast();
     await prefs.setString(
         _historyKey, jsonEncode(history.map((e) => e.toJson()).toList()));
   }

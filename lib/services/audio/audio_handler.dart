@@ -8,6 +8,7 @@ import '../../core/models/episode.dart';
 import '../platform/live_activity_service.dart';
 import '../storage/storage_service.dart';
 import '../web_podcast_service.dart'; // Import WebAudioController
+import '../freshrss_service.dart';
 
 class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   final _player = AudioPlayer();
@@ -457,12 +458,14 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
       // Notify FreshRSS if applicable
       if (completedEpisode != null &&
           completedEpisode.podcastFeedUrl.startsWith('freshrss://')) {
-        print('[FreshRSS] Marking episode as read on server: ${completedEpisode.guid}');
+        print(
+            '[FreshRSS] Marking episode as read on server: ${completedEpisode.guid}');
         // We don't await this to avoid blocking the queue transition
         _storageService.getFreshRssConfig().then((config) {
           if (config['url'] != null) {
             final frService = FreshRssService();
-            frService.configure(config['url']!, config['user']!, config['pass']!);
+            frService.configure(
+                config['url']!, config['user']!, config['pass']!);
             frService.markAsRead(completedEpisode.guid);
           }
         });
@@ -509,6 +512,9 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
       mediaItem.add(item);
       _currentEpisode = episode;
       _currentEpisodeController.add(episode);
+
+      // 记录到播放历史
+      await _storageService.addToHistory(episode);
 
       // Load URL in WebView (Video Player)
       if (episode.audioUrl != null) {

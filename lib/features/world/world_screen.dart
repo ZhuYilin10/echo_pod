@@ -25,7 +25,6 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
 
   // Category State
   String _selectedGenreId = 'all';
-  String _selectedGenreName = '热门推荐';
 
   final List<Map<String, dynamic>> _categories = [
     {'name': '热门节目', 'icon': Icons.stars_rounded, 'id': 'all'},
@@ -237,19 +236,6 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
               child: Padding(
                 padding: const EdgeInsets.only(top: 1, bottom: 8),
                 child: _buildCategoryBar(),
-              ),
-            ),
-
-            // Category Label
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              sliver: SliverToBoxAdapter(
-                child: Text(
-                  _selectedGenreName,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
               ),
             ),
 
@@ -465,8 +451,6 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
               if (_selectedGenreId == cat['id']) return;
               setState(() {
                 _selectedGenreId = cat['id'];
-                _selectedGenreName =
-                    cat['name'] == '热门节目' ? '热门推荐' : '${cat['name']}频道';
                 _displayCount = _pageSize;
                 _isLoadingMore = false;
               });
@@ -501,7 +485,8 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
                     borderRadius: BorderRadius.circular(24),
                     image: podcast.imageUrl != null
                         ? DecorationImage(
-                            image: NetworkImage(podcast.imageUrl!),
+                            image:
+                                NetworkImage(_getHighResUrl(podcast.imageUrl!)),
                             fit: BoxFit.cover,
                           )
                         : null,
@@ -511,23 +496,17 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
                 ),
               ),
               const SizedBox(height: 8),
-              Text(
-                podcast.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      height: 1.1,
-                    ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                podcast.artist ?? 'Unknown',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
+              Center(
+                child: Text(
+                  podcast.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        height: 1.1,
+                      ),
+                ),
               ),
             ],
           ),
