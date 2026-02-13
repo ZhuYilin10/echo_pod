@@ -279,24 +279,42 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
       final podcastService = ref.read(podcastServiceProvider);
       final storageService = ref.read(storageServiceProvider);
       int success = 0;
+      int processed = 0;
 
-      for (final url in urls) {
-        try {
-          final podcast = await podcastService.fetchPodcastMetadata(url);
-          if (podcast != null) {
-            await storageService.subscribe(podcast);
-            success++;
-          }
-        } catch (_) {}
+      // 并发限制，避免过多请求
+      const int batchSize = 5;
+      for (var i = 0; i < urls.length; i += batchSize) {
+        final end = (i + batchSize < urls.length) ? i + batchSize : urls.length;
+        final batch = urls.sublist(i, end);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('正在导入: ${processed + 1}/${urls.length}...'),
+              duration: const Duration(seconds: 1)));
+        }
+
+        await Future.wait(batch.map((url) async {
+          try {
+            final podcast = await podcastService.fetchPodcastMetadata(url);
+            if (podcast != null) {
+              await storageService.subscribe(podcast);
+              success++;
+            }
+          } catch (_) {}
+        }));
+        processed += batch.length;
       }
 
       _refreshShelf();
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('导入完成: $success/${urls.length} 个订阅')));
       }
     } catch (e) {
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('导入失败: $e')));
       }
