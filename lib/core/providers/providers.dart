@@ -103,6 +103,41 @@ final playHistoryNotifierProvider =
   return PlayHistoryNotifier(storage);
 });
 
+class FavoritesNotifier extends StateNotifier<AsyncValue<List<Episode>>> {
+  final StorageService _storage;
+  FavoritesNotifier(this._storage) : super(const AsyncValue.loading()) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final list = await _storage.getFavorites();
+      state = AsyncValue.data(list);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> toggle(Episode episode) async {
+    final current = state.valueOrNull ?? [];
+    final isFav = current.any((e) => e.guid == episode.guid);
+    if (isFav) {
+      await _storage.removeFavorite(episode.guid);
+    } else {
+      await _storage.addFavorite(episode);
+    }
+    await _load();
+  }
+
+  void refresh() => _load();
+}
+
+final favoritesNotifierProvider =
+    StateNotifierProvider<FavoritesNotifier, AsyncValue<List<Episode>>>((ref) {
+  final storage = ref.watch(storageServiceProvider);
+  return FavoritesNotifier(storage);
+});
+
 final subscriptionsProvider = FutureProvider<List<Podcast>>((ref) async {
   final storage = ref.watch(storageServiceProvider);
   return storage.getSubscriptions();

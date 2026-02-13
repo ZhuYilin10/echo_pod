@@ -27,31 +27,29 @@ class PlayerScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<PlayerScreen> createState() => _PlayerScreenState();
 
-  /// 显示播放器页面（透明背景模态）
+  /// 显示播放器页面（全屏页面）
   static Future<void> show(BuildContext context, Episode episode) {
-    return showGeneralDialog(
-      context: context,
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return PlayerScreen(episode: episode);
-      },
-      transitionDuration: const Duration(milliseconds: 400),
-      transitionBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(0.0, 1.0);
-        const end = Offset.zero;
-        const curve = Curves.easeOutCubic;
+    return Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) {
+          return PlayerScreen(episode: episode);
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.easeOutCubic;
 
-        var tween = Tween(begin: begin, end: end).chain(
-          CurveTween(curve: curve),
-        );
+          var tween = Tween(begin: begin, end: end).chain(
+            CurveTween(curve: curve),
+          );
 
-        return SlideTransition(
-          position: animation.drive(tween),
-          child: child,
-        );
-      },
-      barrierDismissible: true,
-      barrierLabel: '',
-      barrierColor: Colors.transparent,
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 400),
+      ),
     );
   }
 }
@@ -243,37 +241,54 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final isSubscribedAsync = ref.watch(subscriptionsProvider).whenData(
         (subs) => subs.any((p) => p.title == _displayEpisode.podcastTitle));
 
-    return Dismissible(
-      key: const Key('player_dismiss'),
-      direction: DismissDirection.down,
-      background: const SizedBox.shrink(),
-      onDismissed: (_) => Navigator.of(context).pop(),
-      child: Scaffold(
-        backgroundColor: AppColors.ricePaper,
-        appBar: AppBar(
-          systemOverlayStyle: const SystemUiOverlayStyle(
-            statusBarColor: Colors.transparent,
-            statusBarBrightness: Brightness.light,
-            statusBarIconBrightness: Brightness.dark,
-          ),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.expand_more,
-                size: 32, color: Color(0xFF1D1D1F)),
-            onPressed: () => Navigator.pop(context),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.info_outline, color: Color(0xFF1D1D1F)),
-              onPressed: () => _showShownoteBottomSheet(context),
-            ),
-            const SizedBox(width: 16),
-          ],
+    return Scaffold(
+      backgroundColor: AppColors.ricePaper,
+      appBar: AppBar(
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarBrightness: Brightness.light,
+          statusBarIconBrightness: Brightness.dark,
         ),
-        body: Padding(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon:
+              const Icon(Icons.expand_more, size: 32, color: Color(0xFF1D1D1F)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          Consumer(
+            builder: (context, ref, _) {
+              final favAsync = ref.watch(favoritesNotifierProvider);
+              final isFav = favAsync.valueOrNull
+                      ?.any((e) => e.guid == _displayEpisode.guid) ??
+                  false;
+              return IconButton(
+                icon: Icon(
+                  isFav ? Icons.favorite : Icons.favorite_border,
+                  color:
+                      isFav ? const Color(0xFFE35D6A) : const Color(0xFF1D1D1F),
+                ),
+                onPressed: () {
+                  ref
+                      .read(favoritesNotifierProvider.notifier)
+                      .toggle(_displayEpisode);
+                },
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: Color(0xFF1D1D1F)),
+            onPressed: () => _showShownoteBottomSheet(context),
+          ),
+          const SizedBox(width: 16),
+        ],
+      ),
+      body: SafeArea(
+        child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Consumer(
                 builder: (context, ref, child) {
@@ -324,9 +339,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withOpacity(0.08),
                             blurRadius: 40,
                             offset: const Offset(0, 20),
+                          ),
+                          BoxShadow(
+                            color: AppColors.vermillion.withOpacity(0.15),
+                            blurRadius: 60,
+                            offset: const Offset(0, 30),
                           )
                         ],
                       ),
@@ -533,8 +553,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       Material(
                         color: Colors.white,
                         shape: const CircleBorder(),
-                        elevation: 2,
-                        shadowColor: Colors.black.withOpacity(0.05),
                         child: InkWell(
                           onTap: () => audioHandler.seek(
                               audioHandler.playbackState.value.updatePosition -
@@ -560,34 +578,41 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                         builder: (context) {
                           final currentId = audioHandler.mediaItem.value?.id;
                           final isCurrent = currentId == _displayEpisode.guid;
-                          return Material(
-                            color: AppColors.vermillion,
-                            shape: const CircleBorder(),
-                            elevation: 4,
-                            shadowColor: AppColors.vermillion.withOpacity(0.3),
-                            child: InkWell(
-                              onTap: () {
-                                if (isCurrent) {
-                                  playing
-                                      ? audioHandler.pause()
-                                      : audioHandler.play();
-                                } else {
-                                  audioHandler.playEpisode(_displayEpisode);
-                                }
-                              },
-                              customBorder: const CircleBorder(),
-                              child: Container(
-                                width: 88,
-                                height: 88,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
+                          return Container(
+                            width: 88,
+                            height: 88,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.vermillion,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.vermillion.withOpacity(0.35),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 12),
                                 ),
-                                child: Icon(
-                                  (isCurrent && playing)
-                                      ? Icons.pause
-                                      : Icons.play_arrow,
-                                  size: 40,
-                                  color: Colors.white,
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  if (isCurrent) {
+                                    playing
+                                        ? audioHandler.pause()
+                                        : audioHandler.play();
+                                  } else {
+                                    audioHandler.playEpisode(_displayEpisode);
+                                  }
+                                },
+                                customBorder: const CircleBorder(),
+                                child: Center(
+                                  child: Icon(
+                                    (isCurrent && playing)
+                                        ? Icons.pause
+                                        : Icons.play_arrow,
+                                    size: 40,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -599,8 +624,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       Material(
                         color: Colors.white,
                         shape: const CircleBorder(),
-                        elevation: 2,
-                        shadowColor: Colors.black.withOpacity(0.05),
                         child: InkWell(
                           onTap: () => audioHandler.seek(
                               audioHandler.playbackState.value.updatePosition +
@@ -628,9 +651,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               // Bottom Controls - Speed, Sleep Timer, Playlist
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Speed Control
                     _buildControlButton(
@@ -728,22 +751,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     required Widget child,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.06),
+    return Container(
+      width: 64,
+      height: 40,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        child: Container(
-          width: 64,
-          height: 40,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Center(child: child),
-        ),
+        child: Center(child: child),
       ),
     );
   }

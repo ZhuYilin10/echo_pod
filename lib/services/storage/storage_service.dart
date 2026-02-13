@@ -14,6 +14,7 @@ class StorageService {
   static const String _timeSavedKey = 'total_time_saved';
   static const String _skipSilenceKey = 'skip_silence_enabled';
   static const String _podcastSpeedsKey = 'podcast_speeds';
+  static const String _favoritesKey = 'favorite_episodes';
   static const String _themeKey = 'app_theme_config';
   static const String _freshrssUrlKey = 'freshrss_url';
   static const String _freshrssUserKey = 'freshrss_user';
@@ -264,6 +265,43 @@ class StorageService {
       return AppThemeConfig.fromJson(json);
     } catch (e) {
       return null;
+    }
+  }
+
+  // --- 收藏管理 ---
+
+  Future<void> addFavorite(Episode episode) async {
+    final prefs = await SharedPreferences.getInstance();
+    final favorites = await getFavorites();
+    if (!favorites.any((e) => e.guid == episode.guid)) {
+      favorites.insert(0, episode);
+      await prefs.setString(
+          _favoritesKey, jsonEncode(favorites.map((e) => e.toJson()).toList()));
+    }
+  }
+
+  Future<void> removeFavorite(String guid) async {
+    final prefs = await SharedPreferences.getInstance();
+    final favorites = await getFavorites();
+    favorites.removeWhere((e) => e.guid == guid);
+    await prefs.setString(
+        _favoritesKey, jsonEncode(favorites.map((e) => e.toJson()).toList()));
+  }
+
+  Future<bool> isFavorite(String guid) async {
+    final favorites = await getFavorites();
+    return favorites.any((e) => e.guid == guid);
+  }
+
+  Future<List<Episode>> getFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_favoritesKey);
+    if (raw == null) return [];
+    try {
+      final List list = jsonDecode(raw);
+      return list.map((e) => Episode.fromJson(e)).toList();
+    } catch (e) {
+      return [];
     }
   }
 

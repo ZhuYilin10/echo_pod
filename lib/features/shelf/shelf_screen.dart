@@ -63,6 +63,9 @@ class _ShelfScreenState extends ConsumerState<ShelfScreen>
             case 3:
               ref.read(playHistoryNotifierProvider.notifier).refresh();
               break;
+            case 4:
+              ref.read(favoritesNotifierProvider.notifier).refresh();
+              break;
           }
         },
         child: CustomScrollView(
