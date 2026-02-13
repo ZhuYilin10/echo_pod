@@ -11,6 +11,7 @@ import '../../core/utils/image_utils.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
 import '../search/explore_screen.dart';
+import '../settings/freshrss_login_screen.dart';
 
 class WorldScreen extends ConsumerStatefulWidget {
   const WorldScreen({super.key});
@@ -160,33 +161,51 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
                         ),
                       ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.search_rounded),
-                      iconSize: 28,
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          PageRouteBuilder(
-                            opaque: true,
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) =>
-                                    const ExploreScreen(),
-                            transitionsBuilder: (context, animation,
-                                secondaryAnimation, child) {
-                              return SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0, 1),
-                                  end: Offset.zero,
-                                ).animate(CurvedAnimation(
-                                  parent: animation,
-                                  curve: Curves.easeInOut,
-                                )),
-                                child: child,
-                              );
-                            },
-                          ),
-                        );
-                      },
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.rss_feed_rounded),
+                          iconSize: 26,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const FreshRssLoginScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.search_rounded),
+                          iconSize: 28,
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                opaque: true,
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        const ExploreScreen(),
+                                transitionsBuilder: (context, animation,
+                                    secondaryAnimation, child) {
+                                  return SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(0, 1),
+                                      end: Offset.zero,
+                                    ).animate(CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeInOut,
+                                    )),
+                                    child: child,
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),

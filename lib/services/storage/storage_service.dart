@@ -27,6 +27,13 @@ class StorageService {
     await prefs.setString(_freshrssPassKey, pass);
   }
 
+  Future<void> clearFreshRssConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_freshrssUrlKey);
+    await prefs.remove(_freshrssUserKey);
+    await prefs.remove(_freshrssPassKey);
+  }
+
   Future<Map<String, String?>> getFreshRssConfig() async {
     final prefs = await SharedPreferences.getInstance();
     return {

@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
-import '../../services/podcast_service.dart';
-import '../../services/storage/storage_service.dart';
-import '../settings/freshrss_login_screen.dart';
+
 import 'widgets/record_player_panel.dart';
 import 'widgets/shelf_view_subscribed.dart';
 import 'widgets/shelf_view_downloaded.dart';
 import 'widgets/shelf_view_history.dart';
 import 'widgets/shelf_view_favorites.dart';
-import 'widgets/shelf_view_freshrss.dart';
 
 import 'widgets/shelf_view_recent_episodes.dart';
 
@@ -81,6 +78,7 @@ class _ShelfScreenState extends ConsumerState<ShelfScreen>
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,17 +100,7 @@ class _ShelfScreenState extends ConsumerState<ShelfScreen>
                         ),
                       ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.sync_rounded),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const FreshRssLoginScreen(),
-                          ),
-                        );
-                      },
-                    ),
+                    _buildDateWidget(),
                   ],
                 ),
               ),
@@ -187,7 +175,8 @@ class _ShelfScreenState extends ConsumerState<ShelfScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? selectedColor : Colors.grey.withOpacity(0.15),
+          color:
+              isSelected ? selectedColor : Colors.grey.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(25),
         ),
         child: Row(
@@ -237,5 +226,68 @@ class _ShelfScreenState extends ConsumerState<ShelfScreen>
       default:
         return const SliverFillRemaining(child: SizedBox.shrink());
     }
+  }
+
+  Widget _buildDateWidget() {
+    final now = DateTime.now();
+    const months = [
+      '一月',
+      '二月',
+      '三月',
+      '四月',
+      '五月',
+      '六月',
+      '七月',
+      '八月',
+      '九月',
+      '十月',
+      '十一月',
+      '十二月',
+    ];
+    final month = months[now.month - 1];
+    final day = now.day.toString();
+
+    return Container(
+      width: 42,
+      height: 46,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.grey.withValues(alpha: 0.15),
+          width: 0.5,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            month,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: Colors.red[400],
+              height: 1.2,
+            ),
+          ),
+          Text(
+            day,
+            style: const TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1D1D1F),
+              height: 1.1,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
