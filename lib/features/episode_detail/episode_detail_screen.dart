@@ -6,6 +6,7 @@ import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
 import '../ai_agent/ai_agent_screen.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
+import '../shelf/widgets/collapsible_player_header.dart';
 
 import '../common/download_button.dart';
 import 'package:m3e_collection/m3e_collection.dart';
@@ -257,6 +258,7 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
         ],
       ),
       body: Stack(
+        fit: StackFit.expand,
         children: [
           SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -489,6 +491,7 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                         height: 1.8,
                       ),
                 ),
+                const SizedBox(height: 80),
               ],
             ),
           ),
@@ -565,6 +568,14 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                   ),
                 ),
               ),
+            ),
+          // 浮动 Mini Player（loading 时不显示）
+          if (!_isResolving)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: MediaQuery.of(context).padding.bottom + 8,
+              child: const FloatingMiniPlayer(),
             ),
         ],
       ),

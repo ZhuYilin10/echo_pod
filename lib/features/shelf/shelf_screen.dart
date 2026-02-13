@@ -149,7 +149,7 @@ class _ShelfScreenState extends ConsumerState<ShelfScreen>
             // 根据选中标签显示不同内容
             _buildContentByTab(subsAsync),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            const SliverToBoxAdapter(child: SizedBox(height: 168)),
           ],
         ),
       ),

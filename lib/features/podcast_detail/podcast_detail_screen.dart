@@ -8,6 +8,7 @@ import 'package:audio_service/audio_service.dart'; // Import for PlaybackState a
 import 'package:m3e_collection/m3e_collection.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/utils/image_utils.dart';
+import '../shelf/widgets/collapsible_player_header.dart';
 
 class PodcastDetailScreen extends ConsumerStatefulWidget {
   final Podcast podcast;
@@ -150,166 +151,186 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
         ref.watch(isSubscribedProvider(widget.podcast.feedUrl));
 
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () async {
-          _loadEpisodes(incremental: true);
-        },
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 250,
-              pinned: true,
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => Navigator.pop(context),
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                title: Text(widget.podcast.title,
-                    style: TextStyle(
-                        color:
-                            _isAppBarCollapsed ? Colors.black : Colors.white)),
-                titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
-                collapseMode: CollapseMode.pin,
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (widget.podcast.imageUrl != null &&
-                        widget.podcast.imageUrl!.isNotEmpty)
-                      CachedNetworkImage(
-                          imageUrl: ImageUtils.getHighResUrl(
-                              widget.podcast.imageUrl!),
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => Container(
-                                color: Colors.indigo.shade900,
-                                child: const Icon(Icons.podcasts,
-                                    size: 80, color: Colors.white24),
-                              ))
-                    else
-                      Container(
-                        color: Colors.indigo.shade900,
-                        child: const Icon(Icons.podcasts,
-                            size: 80, color: Colors.white24),
-                      ),
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black87],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          RefreshIndicator(
+            onRefresh: () async {
+              _loadEpisodes(incremental: true);
+            },
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 250,
+                  pinned: true,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  leading: IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  flexibleSpace: FlexibleSpaceBar(
+                    title: Text(widget.podcast.title,
+                        style: TextStyle(
+                            color: _isAppBarCollapsed
+                                ? Colors.black
+                                : Colors.white)),
+                    titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+                    collapseMode: CollapseMode.pin,
+                    background: Stack(
+                      fit: StackFit.expand,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(widget.podcast.artist ?? '',
-                                  style:
-                                      Theme.of(context).textTheme.titleMedium),
-                              const SizedBox(height: 4),
-                              Text('${_allEpisodes.length} 剧集',
-                                  style: Theme.of(context).textTheme.bodySmall),
-                            ],
+                        if (widget.podcast.imageUrl != null &&
+                            widget.podcast.imageUrl!.isNotEmpty)
+                          CachedNetworkImage(
+                              imageUrl: ImageUtils.getHighResUrl(
+                                  widget.podcast.imageUrl!),
+                              fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) => Container(
+                                    color: Colors.indigo.shade900,
+                                    child: const Icon(Icons.podcasts,
+                                        size: 80, color: Colors.white24),
+                                  ))
+                        else
+                          Container(
+                            color: Colors.indigo.shade900,
+                            child: const Icon(Icons.podcasts,
+                                size: 80, color: Colors.white24),
                           ),
-                        ),
-                        isSubscribedAsync.when(
-                          data: (isSubscribed) => ElevatedButton(
-                            onPressed: () async {
-                              final storage = ref.read(storageServiceProvider);
-                              if (isSubscribed) {
-                                await storage
-                                    .unsubscribe(widget.podcast.feedUrl);
-                              } else {
-                                await storage.subscribe(widget.podcast);
-                              }
-                              ref.invalidate(subscriptionsProvider);
-                              ref.invalidate(
-                                  isSubscribedProvider(widget.podcast.feedUrl));
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isSubscribed
-                                  ? Colors.grey[800]
-                                  : Colors.indigo,
-                              foregroundColor: Colors.white,
+                        Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, Colors.black87],
                             ),
-                            child: Text(isSubscribed ? '已订阅' : '订阅'),
                           ),
-                          loading: () => CircularProgressIndicatorM3E(
-                            size: CircularProgressM3ESize.s,
-                            activeColor: Theme.of(context).colorScheme.primary,
-                          ),
-                          error: (_, __) => const SizedBox(),
                         ),
                       ],
                     ),
-                    const Divider(height: 32),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('剧集列表',
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold)),
-                        IconButton(
-                          icon: Icon(_isAscending
-                              ? Icons.sort_by_alpha_rounded
-                              : Icons.sort_rounded),
-                          tooltip: _isAscending ? '正序' : '倒序',
-                          onPressed: _toggleSort,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(widget.podcast.artist ?? '',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium),
+                                  const SizedBox(height: 4),
+                                  Text('${_allEpisodes.length} 剧集',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall),
+                                ],
+                              ),
+                            ),
+                            isSubscribedAsync.when(
+                              data: (isSubscribed) => ElevatedButton(
+                                onPressed: () async {
+                                  final storage =
+                                      ref.read(storageServiceProvider);
+                                  if (isSubscribed) {
+                                    await storage
+                                        .unsubscribe(widget.podcast.feedUrl);
+                                  } else {
+                                    await storage.subscribe(widget.podcast);
+                                  }
+                                  ref.invalidate(subscriptionsProvider);
+                                  ref.invalidate(isSubscribedProvider(
+                                      widget.podcast.feedUrl));
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: isSubscribed
+                                      ? Colors.grey[800]
+                                      : Colors.indigo,
+                                  foregroundColor: Colors.white,
+                                ),
+                                child: Text(isSubscribed ? '已订阅' : '订阅'),
+                              ),
+                              loading: () => CircularProgressIndicatorM3E(
+                                size: CircularProgressM3ESize.s,
+                                activeColor:
+                                    Theme.of(context).colorScheme.primary,
+                              ),
+                              error: (_, __) => const SizedBox(),
+                            ),
+                          ],
+                        ),
+                        const Divider(height: 32),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('剧集列表',
+                                style: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold)),
+                            IconButton(
+                              icon: Icon(_isAscending
+                                  ? Icons.sort_by_alpha_rounded
+                                  : Icons.sort_rounded),
+                              tooltip: _isAscending ? '正序' : '倒序',
+                              onPressed: _toggleSort,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            if (_isLoading)
-              SliverToBoxAdapter(
-                  child: Center(
-                      child: Padding(
-                          padding: EdgeInsets.all(40),
+                if (_isLoading)
+                  SliverToBoxAdapter(
+                      child: Center(
+                          child: Padding(
+                              padding: EdgeInsets.all(40),
+                              child: CircularProgressIndicatorM3E(
+                                size: CircularProgressM3ESize.m,
+                                activeColor:
+                                    Theme.of(context).colorScheme.primary,
+                              ))))
+                else
+                  SliverAnimatedList(
+                    key: _listKey,
+                    initialItemCount: _displayedEpisodes.length,
+                    itemBuilder: (context, index, animation) {
+                      final episode = _displayedEpisodes[index];
+                      return SizeTransition(
+                        sizeFactor: animation,
+                        child: _buildEpisodeTile(context, episode),
+                      );
+                    },
+                  ),
+                if (_isPaginating)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Center(
                           child: CircularProgressIndicatorM3E(
-                            size: CircularProgressM3ESize.m,
-                            activeColor: Theme.of(context).colorScheme.primary,
-                          ))))
-            else
-              SliverAnimatedList(
-                key: _listKey,
-                initialItemCount: _displayedEpisodes.length,
-                itemBuilder: (context, index, animation) {
-                  final episode = _displayedEpisodes[index];
-                  return SizeTransition(
-                    sizeFactor: animation,
-                    child: _buildEpisodeTile(context, episode),
-                  );
-                },
-              ),
-            if (_isPaginating)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Center(
-                      child: CircularProgressIndicatorM3E(
-                    size: CircularProgressM3ESize.s,
-                    activeColor: Theme.of(context).colorScheme.primary,
-                  )),
-                ),
-              ),
-          ],
-        ),
+                        size: CircularProgressM3ESize.s,
+                        activeColor: Theme.of(context).colorScheme.primary,
+                      )),
+                    ),
+                  ),
+                const SliverToBoxAdapter(child: SizedBox(height: 80)),
+              ],
+            ),
+          ),
+          // 浮动 Mini Player
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: MediaQuery.of(context).padding.bottom + 8,
+            child: const FloatingMiniPlayer(),
+          ),
+        ],
       ),
     );
   }

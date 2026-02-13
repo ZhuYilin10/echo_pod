@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/providers.dart';
 import '../services/web_podcast_service.dart';
-import 'discovery/discovery_screen.dart';
 import 'shelf/shelf_screen.dart';
+import 'shelf/widgets/collapsible_player_header.dart';
 import 'world/world_screen.dart';
-import 'search/explore_screen.dart';
 
 class MainNavigationWrapper extends ConsumerStatefulWidget {
   const MainNavigationWrapper({super.key});
@@ -47,9 +46,21 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      body: Stack(
+        children: [
+          // 主内容
+          IndexedStack(
+            index: _currentIndex,
+            children: _screens,
+          ),
+          // 浮动 Mini Player — 定位在 tabbar 正上方
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: MediaQuery.of(context).padding.bottom + 56,
+            child: const FloatingMiniPlayer(),
+          ),
+        ],
       ),
       bottomNavigationBar: CNTabBar(
         iconSize: 20,

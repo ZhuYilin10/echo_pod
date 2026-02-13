@@ -326,7 +326,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
               ),
             ),
 
-            const SliverToBoxAdapter(child: SizedBox(height: 80)),
+            const SliverToBoxAdapter(child: SizedBox(height: 148)),
           ],
         ),
       ),
