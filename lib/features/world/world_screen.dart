@@ -12,6 +12,9 @@ import '../podcast_detail/podcast_detail_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
 import '../search/explore_screen.dart';
 import '../settings/freshrss_login_screen.dart';
+import '../../core/widgets/error_status_widget.dart';
+import '../../services/connectivity_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class WorldScreen extends ConsumerStatefulWidget {
   const WorldScreen({super.key});
@@ -121,6 +124,41 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
     final contentAsync = _selectedGenreId == 'trending_episodes'
         ? ref.watch(trendingEpisodesProvider)
         : ref.watch(genrePodcastsProvider(_selectedGenreId));
+
+    // Listen for connectivity changes
+    ref.listen<AsyncValue<List<ConnectivityResult>>>(connectivityStreamProvider,
+        (previous, next) {
+      next.whenData((results) {
+        // If we have any connection (not none)
+        // And we currently have an error in either provider
+        bool hasError = trendingAsync.hasError || contentAsync.hasError;
+        bool isConnected =
+            !results.contains(ConnectivityResult.none) && results.isNotEmpty;
+
+        if (hasError && isConnected) {
+          debugPrint('WorldScreen: Network restored, auto-refreshing...');
+          _onRefresh();
+        }
+      });
+    });
+
+    // Listen for connectivity changes
+    ref.listen<AsyncValue<List<ConnectivityResult>>>(connectivityStreamProvider,
+        (previous, next) {
+      next.whenData((results) {
+        // If we have any connection (not none)
+        bool isConnected =
+            !results.contains(ConnectivityResult.none) && results.isNotEmpty;
+
+        // And we currently have an error in either provider
+        bool hasError = trendingAsync.hasError || contentAsync.hasError;
+
+        if (hasError && isConnected) {
+          debugPrint('WorldScreen: Network restored, auto-refreshing...');
+          _onRefresh();
+        }
+      });
+    });
 
     return Scaffold(
       key: const PageStorageKey('world_screen'),
@@ -271,7 +309,14 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
                       ),
                     ),
                   ),
-                  error: (error, stack) => const SizedBox.shrink(),
+                  error: (error, stack) => SizedBox(
+                    height: 200,
+                    child: ErrorStatusWidget(
+                      message: error.toString(),
+                      onRetry: _onRefresh,
+                      icon: Icons.refresh_rounded,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -340,8 +385,12 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
                   ),
                 ),
               ),
-              error: (e, s) => SliverToBoxAdapter(
-                child: Center(child: Text('加载失败: $e')),
+              error: (e, s) => SliverFillRemaining(
+                hasScrollBody: false,
+                child: ErrorStatusWidget(
+                  message: e.toString(),
+                  onRetry: _onRefresh,
+                ),
               ),
             ),
 
