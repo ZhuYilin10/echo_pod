@@ -279,11 +279,7 @@ class ShelfViewRecentEpisodes extends ConsumerWidget {
           audioHandler.playEpisode(resolved);
           // 跳转到播放器
           if (context.mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => PlayerScreen(episode: resolved)),
-            );
+            PlayerScreen.show(context, resolved);
           }
         } else {
           if (context.mounted) {
@@ -302,10 +298,7 @@ class ShelfViewRecentEpisodes extends ConsumerWidget {
       }
     } else {
       audioHandler.playEpisode(episode);
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)),
-      );
+      PlayerScreen.show(context, episode);
     }
   }
 

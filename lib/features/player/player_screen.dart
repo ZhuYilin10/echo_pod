@@ -26,6 +26,34 @@ class PlayerScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<PlayerScreen> createState() => _PlayerScreenState();
+
+  /// 显示播放器页面（透明背景模态）
+  static Future<void> show(BuildContext context, Episode episode) {
+    return showGeneralDialog(
+      context: context,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return PlayerScreen(episode: episode);
+      },
+      transitionDuration: const Duration(milliseconds: 400),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(0.0, 1.0);
+        const end = Offset.zero;
+        const curve = Curves.easeOutCubic;
+
+        var tween = Tween(begin: begin, end: end).chain(
+          CurveTween(curve: curve),
+        );
+
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: child,
+        );
+      },
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: Colors.transparent,
+    );
+  }
 }
 
 class _PlayerScreenState extends ConsumerState<PlayerScreen> {
@@ -218,6 +246,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     return Dismissible(
       key: const Key('player_dismiss'),
       direction: DismissDirection.down,
+      background: const SizedBox.shrink(),
       onDismissed: (_) => Navigator.of(context).pop(),
       child: Scaffold(
         backgroundColor: AppColors.ricePaper,

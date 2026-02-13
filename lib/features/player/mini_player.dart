@@ -91,11 +91,7 @@ class MiniPlayer extends ConsumerWidget {
                           );
                   }
 
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => PlayerScreen(episode: episode)),
-                  );
+                  PlayerScreen.show(context, episode);
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),

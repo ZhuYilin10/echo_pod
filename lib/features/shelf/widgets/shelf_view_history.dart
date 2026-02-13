@@ -233,11 +233,7 @@ class ShelfViewHistory extends ConsumerWidget {
         if (resolved != null && resolved.audioUrl != null) {
           audioHandler.playEpisode(resolved);
           if (context.mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => PlayerScreen(episode: resolved)),
-            );
+            PlayerScreen.show(context, resolved);
           }
         } else {
           if (context.mounted) {
@@ -256,10 +252,7 @@ class ShelfViewHistory extends ConsumerWidget {
       }
     } else {
       audioHandler.playEpisode(episode);
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => PlayerScreen(episode: episode)),
-      );
+      PlayerScreen.show(context, episode);
     }
   }
 
