@@ -12,7 +12,7 @@ class ShelfViewHistory extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final historyAsync = ref.watch(playHistoryProvider);
+    final historyAsync = ref.watch(playHistoryNotifierProvider);
 
     return historyAsync.when(
       data: (episodes) {

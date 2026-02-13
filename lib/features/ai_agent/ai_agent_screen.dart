@@ -56,6 +56,10 @@ class _AIAgentScreenState extends ConsumerState<AIAgentScreen> {
       appBar: AppBar(
         title: const Text('AI 助手'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Column(
         children: [

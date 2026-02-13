@@ -7,7 +7,7 @@ import '../../core/models/podcast.dart';
 import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
-import '../search/search_screen.dart';
+import '../search/explore_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
 import 'package:m3e_collection/m3e_collection.dart';
 
@@ -246,7 +246,7 @@ class _DiscoveryScreenState extends ConsumerState<DiscoveryScreen> {
                   onPressed: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const SearchScreen())),
+                          builder: (context) => const ExploreScreen())),
                 ),
                 const SizedBox(width: 8),
               ],

@@ -584,13 +584,15 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
 
         if (autoPlay) await play();
 
-        await _storageService.addToHistory(episode);
         _startSaveTimer();
 
         // Explicitly apply speed for the new episode to ensure it's set
         // even if the stream listener is slightly delayed or we are just resuming.
         await _applySpeedForEpisode(episode);
       }
+
+      // Always record to history
+      await _storageService.addToHistory(episode);
     } catch (e) {
       print('Error playing episode: $e');
     }

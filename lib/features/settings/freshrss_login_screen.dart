@@ -6,7 +6,8 @@ class FreshRssLoginScreen extends ConsumerStatefulWidget {
   const FreshRssLoginScreen({super.key});
 
   @override
-  ConsumerState<FreshRssLoginScreen> createState() => _FreshRssLoginScreenState();
+  ConsumerState<FreshRssLoginScreen> createState() =>
+      _FreshRssLoginScreenState();
 }
 
 class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
@@ -51,7 +52,9 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
       final success = await service.login();
 
       if (success) {
-        await ref.read(storageServiceProvider).saveFreshRssConfig(url, user, pass);
+        await ref
+            .read(storageServiceProvider)
+            .saveFreshRssConfig(url, user, pass);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('登录成功！')),
@@ -75,6 +78,10 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('FreshRSS 登录'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

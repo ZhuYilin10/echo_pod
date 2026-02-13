@@ -15,6 +15,10 @@ class DownloadsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('下载内容'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: downloadsAsync.when(
         data: (episodes) {

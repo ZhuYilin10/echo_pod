@@ -61,8 +61,7 @@ class _ShelfScreenState extends ConsumerState<ShelfScreen>
               await ref.read(downloadedEpisodesProvider.future);
               break;
             case 3:
-              ref.invalidate(playHistoryProvider);
-              await ref.read(playHistoryProvider.future);
+              ref.read(playHistoryNotifierProvider.notifier).refresh();
               break;
           }
         },
@@ -100,28 +99,16 @@ class _ShelfScreenState extends ConsumerState<ShelfScreen>
                         ),
                       ],
                     ),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.sync_rounded),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const FreshRssLoginScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.search_rounded),
-                          iconSize: 28,
-                          onPressed: () {
-                            // TODO: 实现搜索功能
-                          },
-                        ),
-                      ],
+                    IconButton(
+                      icon: const Icon(Icons.sync_rounded),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const FreshRssLoginScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),

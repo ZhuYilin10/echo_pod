@@ -6,7 +6,7 @@ import '../../core/models/episode.dart';
 import '../../core/providers/providers.dart';
 import '../ai_agent/ai_agent_screen.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
-import '../player/player_screen.dart';
+
 import '../common/download_button.dart';
 import 'package:m3e_collection/m3e_collection.dart';
 import '../../core/utils/image_utils.dart';
@@ -304,22 +304,12 @@ class _EpisodeDetailScreenState extends ConsumerState<EpisodeDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            GestureDetector(
-                              onTap: _displayEpisode.hasAudio
-                                  ? () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) => PlayerScreen(
-                                                episode: _displayEpisode)),
-                                      )
-                                  : null,
-                              child: Text(
-                                _displayEpisode.title,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
+                            Text(
+                              _displayEpisode.title,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 8),
                             GestureDetector(

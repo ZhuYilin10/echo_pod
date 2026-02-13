@@ -14,6 +14,10 @@ class PlaylistScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('播放列表'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: StreamBuilder<List<MediaItem>>(
         stream: audioHandler.queue,

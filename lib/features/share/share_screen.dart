@@ -65,6 +65,10 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
       appBar: AppBar(
         title: const Text('生成金句卡片'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           if (_quote != null && !_isLoading)
             IconButton(

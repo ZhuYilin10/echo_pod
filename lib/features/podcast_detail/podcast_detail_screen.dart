@@ -161,6 +161,10 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
               expandedHeight: 250,
               pinned: true,
               backgroundColor: Theme.of(context).colorScheme.surface,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
+              ),
               flexibleSpace: FlexibleSpaceBar(
                 title: Text(widget.podcast.title,
                     style: TextStyle(

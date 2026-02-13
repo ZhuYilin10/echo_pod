@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/podcast_service.dart';
 import '../../services/storage/storage_service.dart';
@@ -74,6 +76,33 @@ final audioHandlerProvider = Provider<EchoPodAudioHandler>((ref) {
   throw UnimplementedError(); // Initialized in main
 });
 
+class PlayHistoryNotifier extends StateNotifier<AsyncValue<List<Episode>>> {
+  final StorageService _storage;
+  PlayHistoryNotifier(this._storage) : super(const AsyncValue.loading()) {
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final history = await _storage.getPlayHistory();
+      state = AsyncValue.data(history);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  void refresh() {
+    _loadHistory();
+  }
+}
+
+final playHistoryNotifierProvider =
+    StateNotifierProvider<PlayHistoryNotifier, AsyncValue<List<Episode>>>(
+        (ref) {
+  final storage = ref.watch(storageServiceProvider);
+  return PlayHistoryNotifier(storage);
+});
+
 final subscriptionsProvider = FutureProvider<List<Podcast>>((ref) async {
   final storage = ref.watch(storageServiceProvider);
   return storage.getSubscriptions();
@@ -91,22 +120,6 @@ final genrePodcastsProvider =
     return discovery.fetchDailyRecommendations();
   }
   return discovery.fetchByGenre(genreId);
-});
-
-final isSubscribedProvider =
-    FutureProvider.family<bool, String>((ref, feedUrl) async {
-  final storage = ref.watch(storageServiceProvider);
-  return storage.isSubscribed(feedUrl);
-});
-
-final downloadedEpisodesProvider = FutureProvider<List<Episode>>((ref) async {
-  final storage = ref.watch(storageServiceProvider);
-  return storage.getDownloadedEpisodes();
-});
-
-final playHistoryProvider = FutureProvider<List<Episode>>((ref) async {
-  final storage = ref.watch(storageServiceProvider);
-  return storage.getPlayHistory();
 });
 
 final recentSubscribedEpisodesProvider =
@@ -133,6 +146,27 @@ final trendingEpisodesProvider = FutureProvider<List<Episode>>((ref) async {
   return podcastService.fetchTrendingEpisodes();
 });
 
+final searchQueryProvider = StateProvider<String>((ref) => '');
+
+final searchResultsProvider = FutureProvider<List<Podcast>>((ref) async {
+  final query = ref.watch(searchQueryProvider);
+  if (query.isEmpty) return [];
+
+  final podcastService = ref.watch(podcastServiceProvider);
+  return podcastService.searchPodcasts(query);
+});
+
+final downloadedEpisodesProvider = FutureProvider<List<Episode>>((ref) async {
+  final storage = ref.watch(storageServiceProvider);
+  return storage.getDownloadedEpisodes();
+});
+
+final isSubscribedProvider =
+    FutureProvider.family<bool, String>((ref, feedUrl) async {
+  final storage = ref.watch(storageServiceProvider);
+  return storage.isSubscribed(feedUrl);
+});
+
 /// 统一的动态 Provider：合并本地订阅和 FreshRSS，过滤近 7 天并排除已播放
 final unifiedRecentEpisodesProvider =
     FutureProvider<List<Episode>>((ref) async {
@@ -152,7 +186,7 @@ final unifiedRecentEpisodesProvider =
   final List<Episode> allRawEpisodes = results.expand((e) => e).toList();
 
   // 4. 获取播放历史用于过滤
-  final history = await ref.watch(playHistoryProvider.future);
+  final history = await storage.getPlayHistory();
   final historyGuids = history.map((e) => e.guid).toSet();
 
   // 5. 过滤逻辑

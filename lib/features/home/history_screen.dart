@@ -9,12 +9,16 @@ class HistoryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final historyAsync = ref.watch(playHistoryProvider);
+    final historyAsync = ref.watch(playHistoryNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('播放历史'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: historyAsync.when(
         data: (episodes) {

@@ -10,7 +10,7 @@ import '../../core/providers/providers.dart';
 import '../../core/utils/image_utils.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
-import '../search/search_screen.dart';
+import '../search/explore_screen.dart';
 
 class WorldScreen extends ConsumerStatefulWidget {
   const WorldScreen({super.key});
@@ -20,7 +20,7 @@ class WorldScreen extends ConsumerStatefulWidget {
 }
 
 class _WorldScreenState extends ConsumerState<WorldScreen>
-    with AutomaticKeepAliveClientMixin {
+    with AutomaticKeepAliveClientMixin, SingleTickerProviderStateMixin {
   // Indices to select: randomly 5 from top 30
   late final List<int> _selectedIndices;
 
@@ -166,8 +166,24 @@ class _WorldScreenState extends ConsumerState<WorldScreen>
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const SearchScreen(),
+                          PageRouteBuilder(
+                            opaque: true,
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    const ExploreScreen(),
+                            transitionsBuilder: (context, animation,
+                                secondaryAnimation, child) {
+                              return SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0, 1),
+                                  end: Offset.zero,
+                                ).animate(CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeInOut,
+                                )),
+                                child: child,
+                              );
+                            },
                           ),
                         );
                       },

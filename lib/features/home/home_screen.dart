@@ -10,7 +10,7 @@ import '../../services/storage/storage_service.dart';
 import '../../core/models/episode.dart';
 import '../../core/models/podcast.dart';
 import '../podcast_detail/podcast_detail_screen.dart';
-import '../search/search_screen.dart';
+import '../search/explore_screen.dart';
 import '../episode_detail/episode_detail_screen.dart';
 import 'downloads_screen.dart';
 import '../common/download_button.dart';
@@ -115,7 +115,7 @@ class HomeScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.search_rounded),
             onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const SearchScreen())),
+                MaterialPageRoute(builder: (context) => const ExploreScreen())),
           ),
           IconButton(
               icon: const Icon(Icons.add_link_rounded),
