@@ -9,6 +9,20 @@ project 'EchoPod', {
   'Release' => :release,
 }
 
+# Xcode 26 may write objectVersion=70, but current xcodeproj gem can't parse it.
+# Normalize before pod install so CocoaPods can always load the user project.
+def normalize_project_object_version!
+  pbxproj_path = File.expand_path('EchoPod.xcodeproj/project.pbxproj', __dir__)
+  return unless File.exist?(pbxproj_path)
+
+  original = File.read(pbxproj_path)
+  normalized = original.gsub(/objectVersion = \d+;/, 'objectVersion = 77;')
+  return if normalized == original
+
+  File.write(pbxproj_path, normalized)
+  puts 'Podfile: normalized EchoPod project objectVersion to 77'
+end
+
 def flutter_root
   generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
   unless File.exist?(generated_xcode_build_settings_path)
@@ -25,6 +39,10 @@ end
 require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
 
 flutter_ios_podfile_setup
+
+pre_install do |_installer|
+  normalize_project_object_version!
+end
 
 target 'EchoPod' do
   use_frameworks!

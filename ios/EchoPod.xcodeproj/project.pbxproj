@@ -600,7 +600,7 @@
 				CODE_SIGN_ENTITLEMENTS = EchoPod.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 88;
+				CURRENT_PROJECT_VERSION = 89;
 				CUSTOM_GROUP_ID = group.com.zhuyl.echoPod;
 				DEVELOPMENT_TEAM = E28GTQWR9V;
 				ENABLE_BITCODE = NO;
@@ -929,7 +929,7 @@
 				CODE_SIGN_ENTITLEMENTS = EchoPod.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 88;
+				CURRENT_PROJECT_VERSION = 89;
 				CUSTOM_GROUP_ID = group.com.zhuyl.echoPod;
 				DEVELOPMENT_TEAM = E28GTQWR9V;
 				ENABLE_BITCODE = NO;
@@ -960,7 +960,7 @@
 				CODE_SIGN_ENTITLEMENTS = EchoPod.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 88;
+				CURRENT_PROJECT_VERSION = 89;
 				CUSTOM_GROUP_ID = group.com.zhuyl.echoPod;
 				DEVELOPMENT_TEAM = E28GTQWR9V;
 				ENABLE_BITCODE = NO;
