@@ -7,6 +7,7 @@ import '../../core/providers/providers.dart';
 import '../../core/models/episode.dart';
 import '../../services/bilibili_parser_service.dart';
 import '../../services/sharing/sharing_service.dart';
+import '../player/player_screen.dart';
 
 /// 订阅管理页面 — 各色大卡片入口
 class FreshRssLoginScreen extends ConsumerStatefulWidget {
@@ -22,6 +23,7 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
   final _urlController = TextEditingController();
   final _userController = TextEditingController();
   final _passController = TextEditingController();
+  bool _isExportingOpml = false;
 
   @override
   void initState() {
@@ -94,7 +96,7 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
     );
   }
 
-  /// 神秘链接 — 哔哩哔哩单集地址
+  /// 神秘链接 — 哔哩哔哩视频链接
   void _showBilibiliDialog() {
     final controller = TextEditingController();
     showModalBottomSheet(
@@ -116,26 +118,28 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
             TextField(
               controller: controller,
               decoration: const InputDecoration(
-                labelText: '粘贴链接',
+                labelText: '粘贴暗号',
+                hintText: '支持整段分享文案',
                 border: OutlineInputBorder(),
               ),
               keyboardType: TextInputType.url,
             ),
+            const SizedBox(height: 8),
+            Text(
+              '会自动从文案里提取可播放坐标',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+            ),
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: () {
+              onPressed: () async {
                 final url = controller.text.trim();
                 if (url.isEmpty) return;
                 Navigator.pop(ctx);
-                if (url.contains('bilibili.com') || url.contains('b23.tv')) {
-                  _handleBilibiliPlay(url);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('无法识别该链接')),
-                  );
-                }
+                await _handleBilibiliVideoLink(url);
               },
-              child: const Text('解析'),
+              child: const Text('启动仪式'),
             ),
           ],
         ),
@@ -143,10 +147,72 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
     );
   }
 
-  /// 播放B站单集视频
+  Future<void> _handleBilibiliVideoLink(String rawUrl) async {
+    final extractedUrl = _extractBilibiliUrl(rawUrl);
+    if (extractedUrl == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('没嗅到可用暗号，再试一次')),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('正在解读暗号…')));
+
+    try {
+      final parser = BilibiliParserService();
+      final resolvedUrl = await parser.resolveShortUrl(extractedUrl);
+
+      if (_containsBilibiliVideoId(resolvedUrl) ||
+          resolvedUrl.contains('bilibili.com/video/')) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        await _handleBilibiliPlay(resolvedUrl);
+        return;
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('这串暗号无法召唤影像')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('仪式中断: $e')));
+    }
+  }
+
+  String? _extractBilibiliUrl(String input) {
+    final text = input.trim();
+    if (text.isEmpty) return null;
+
+    final match = RegExp(
+      r'((https?:\/\/)?(?:(?:m\.)?bilibili\.com|b23\.tv)\/[^\s]+)',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (match == null) return null;
+
+    var url = match.group(1) ?? '';
+    if (url.isEmpty) return null;
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://$url';
+    }
+
+    // Trim trailing punctuation copied from rich share text.
+    url = url.replaceFirst(RegExp(r'[)\]}>，。！？；：,.!?:;]+$'), '');
+    return url;
+  }
+
+  bool _containsBilibiliVideoId(String url) {
+    return RegExp(r'BV[a-zA-Z0-9]+').hasMatch(url);
+  }
+
+  /// 播放 B 站单集视频
   Future<void> _handleBilibiliPlay(String url) async {
     ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('正在解析…')));
+        .showSnackBar(const SnackBar(content: Text('正在召唤影像流…')));
 
     try {
       final parser = BilibiliParserService();
@@ -155,29 +221,33 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
       if (info.videoUrl == null) {
         if (mounted) {
           ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('解析失败，未找到视频流')));
+              .showSnackBar(const SnackBar(content: Text('召唤失败，未找到可播放流')));
         }
         return;
       }
 
       final episode = Episode(
-        guid: url,
+        // Keep web/video mode so PlayerScreen shows native video player.
+        guid: 'web_${url.hashCode}',
         title: info.title,
-        audioUrl: info.videoUrl,
+        // Use original bilibili URL; video controller will parse and resolve stream.
+        audioUrl: url,
         imageUrl: info.coverUrl,
-        podcastTitle: info.author ?? '哔哩哔哩',
-        podcastFeedUrl: url,
+        podcastTitle: info.author ?? '未知来客',
+        podcastFeedUrl: 'web_pseudo_feed',
         description: info.description,
+        articleUrl: url,
       );
 
-      ref.read(audioHandlerProvider).playEpisode(episode);
+      await ref.read(audioHandlerProvider).playEpisode(episode);
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        await PlayerScreen.show(context, episode);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('解析出错: $e')));
+            .showSnackBar(SnackBar(content: Text('召唤出错: $e')));
       }
     }
   }
@@ -208,12 +278,58 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
 
   /// 导出 OPML
   Future<void> _exportOpml() async {
-    final storage = ref.read(storageServiceProvider);
-    final opmlContent = await storage.exportToOpml();
-    final directory = await getTemporaryDirectory();
-    final file = File('${directory.path}/echopod_subs.opml');
-    await file.writeAsString(opmlContent);
-    await Share.shareXFiles([XFile(file.path)], text: '我的 EchoPod 订阅列表 (OPML)');
+    if (_isExportingOpml) return;
+    final renderObject = context.findRenderObject();
+    final sharePositionOrigin =
+        renderObject is RenderBox && renderObject.hasSize
+            ? renderObject.localToGlobal(Offset.zero) & renderObject.size
+            : const Rect.fromLTWH(0, 0, 1, 1);
+
+    setState(() => _isExportingOpml = true);
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('正在准备导出 OPML…')));
+    try {
+      final storage = ref.read(storageServiceProvider);
+      final subscriptions = await storage.getSubscriptions();
+      if (subscriptions.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('当前没有可导出的订阅')));
+        return;
+      }
+
+      final opmlContent = await storage.exportToOpml();
+      final directory = await getTemporaryDirectory();
+      final fileName =
+          'echopod_subs_${DateTime.now().millisecondsSinceEpoch}.opml';
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsString(opmlContent, flush: true);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      await Share.shareXFiles(
+        [
+          XFile(
+            file.path,
+            name: fileName,
+            mimeType: 'text/x-opml',
+          ),
+        ],
+        subject: 'EchoPod 订阅导出',
+        text: '我的 EchoPod 订阅列表 (OPML)',
+        sharePositionOrigin: sharePositionOrigin,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('导出失败: $e')));
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingOpml = false);
+      }
+    }
   }
 
   /// 导入 OPML — 粘贴 OPML 内容
@@ -520,8 +636,10 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
                   color: const Color(0xFFE35D6A), // 朱红
                   icon: Icons.file_upload_rounded,
                   title: 'OPML 导出',
-                  subtitle: '分享订阅列表',
+                  subtitle:
+                      _isExportingOpml ? '正在导出，请稍候…' : '分享订阅列表（不含 FreshRSS）',
                   onTap: _exportOpml,
+                  isLoading: _isExportingOpml,
                   compact: true,
                 ),
               ),
@@ -544,7 +662,7 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
             color: const Color(0xFF1D1D1F), // 墨黑
             icon: Icons.auto_awesome_rounded,
             title: '神秘链接',
-            subtitle: '你知道的…空间地址',
+            subtitle: 'you know who',
             onTap: _showBilibiliDialog,
           ),
         ],
@@ -558,12 +676,13 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
     required String title,
     required String subtitle,
     required VoidCallback onTap,
+    bool isLoading = false,
     bool compact = false,
   }) {
     final height = compact ? 130.0 : 100.0;
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       child: Container(
         height: height,
         padding: const EdgeInsets.all(18),
@@ -582,7 +701,19 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 28),
+            if (isLoading)
+              SizedBox(
+                width: 28,
+                height: 28,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Colors.white.withValues(alpha: 0.95),
+                  ),
+                ),
+              )
+            else
+              Icon(icon, color: Colors.white.withValues(alpha: 0.9), size: 28),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
