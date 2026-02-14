@@ -9,6 +9,9 @@ import UIKit
 @main
 @objc class AppDelegate: FlutterAppDelegate {
   private var activity: Any?
+  private func shareLog(_ message: String) {
+    print("[AppDelegate][Share] \(message)")
+  }
 
   override func application(
     _ application: UIApplication,
@@ -22,6 +25,52 @@ import UIKit
     let widgetChannel = FlutterMethodChannel(
       name: "com.echopod.ai/widget",
       binaryMessenger: controller.binaryMessenger)
+
+    let shareChannel = FlutterMethodChannel(
+      name: "com.echopod/share",
+      binaryMessenger: controller.binaryMessenger)
+
+    shareChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+      let sharedDefaults = UserDefaults(suiteName: "group.com.zhuyl.echoPod")
+      
+      switch call.method {
+      case "checkSharedFile":
+        self.shareLog("checkSharedFile called")
+        // 检查是否有新的分享文件
+        if let timestamp = sharedDefaults?.double(forKey: "shared_file_timestamp"),
+           timestamp > 0,
+           let filePath = sharedDefaults?.string(forKey: "shared_file_path"),
+           let fileName = sharedDefaults?.string(forKey: "shared_file_name") {
+          self.shareLog(
+            "checkSharedFile hit fileName=\(fileName), timestamp=\(timestamp), filePath=\(filePath)"
+          )
+          result([
+            "timestamp": timestamp,
+            "filePath": filePath,
+            "fileName": fileName
+          ])
+        } else {
+          self.shareLog("checkSharedFile no pending shared file")
+          result(nil)
+        }
+      case "clearSharedFile":
+        let prevTimestamp = sharedDefaults?.double(forKey: "shared_file_timestamp") ?? 0
+        let prevFileName = sharedDefaults?.string(forKey: "shared_file_name") ?? "nil"
+        self.shareLog(
+          "clearSharedFile called prevFileName=\(prevFileName), prevTimestamp=\(prevTimestamp)"
+        )
+        // 清理已处理的文件
+        sharedDefaults?.removeObject(forKey: "shared_file_timestamp")
+        sharedDefaults?.removeObject(forKey: "shared_file_path")
+        sharedDefaults?.removeObject(forKey: "shared_file_name")
+        sharedDefaults?.synchronize()
+        self.shareLog("clearSharedFile done")
+        result(nil)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    })
 
     channel.setMethodCallHandler({
       [weak self] (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
@@ -68,6 +117,27 @@ import UIKit
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  // 处理 URL Scheme 打开
+  override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    shareLog("application:openURL received url=\(url)")
+    
+    if url.scheme == "echopod" {
+      // 保存标记，表示 App 是通过分享打开的
+      let sharedDefaults = UserDefaults(suiteName: "group.com.zhuyl.echoPod")
+      sharedDefaults?.set(true, forKey: "app_opened_via_share")
+      sharedDefaults?.synchronize()
+      shareLog("URL handled as echopod scheme")
+      return true
+    }
+    
+    shareLog("URL not handled by share scheme")
+    return super.application(app, open: url, options: options)
   }
 
   private func startLiveActivity(call: FlutterMethodCall, result: @escaping FlutterResult) {

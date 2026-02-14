@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/providers/providers.dart';
 import '../../core/models/episode.dart';
 import '../../services/bilibili_parser_service.dart';
+import '../../services/sharing/sharing_service.dart';
 
 /// 订阅管理页面 — 各色大卡片入口
 class FreshRssLoginScreen extends ConsumerStatefulWidget {
@@ -263,10 +264,10 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
         .showSnackBar(const SnackBar(content: Text('正在导入…')));
 
     try {
-      // 解析 OPML 中的 xmlUrl
-      final urlPattern = RegExp(r'xmlUrl="([^"]+)"', caseSensitive: false);
-      final matches = urlPattern.allMatches(content);
-      final urls = matches.map((m) => m.group(1)!).toList();
+      final podcasts = SharingService.parseOpmlPodcasts(content);
+      final urls = SharingService.dedupeFeedUrls(
+        podcasts.map((podcast) => podcast.feedUrl),
+      );
 
       if (urls.isEmpty) {
         if (mounted) {
@@ -278,8 +279,14 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
 
       final podcastService = ref.read(podcastServiceProvider);
       final storageService = ref.read(storageServiceProvider);
+      final existingFeedUrls = (await storageService.getSubscriptions())
+          .map((podcast) => SharingService.normalizeFeedUrl(podcast.feedUrl))
+          .where((url) => url.isNotEmpty)
+          .toSet();
       int success = 0;
       int processed = 0;
+      int failed = 0;
+      int skippedExisting = 0;
 
       // 并发限制，避免过多请求
       const int batchSize = 5;
@@ -295,13 +302,26 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
         }
 
         await Future.wait(batch.map((url) async {
+          final normalizedUrl = SharingService.normalizeFeedUrl(url);
+          if (existingFeedUrls.contains(normalizedUrl)) {
+            skippedExisting++;
+            return;
+          }
+
           try {
-            final podcast = await podcastService.fetchPodcastMetadata(url);
+            final podcast = await podcastService.fetchPodcastMetadata(
+              normalizedUrl,
+            );
             if (podcast != null) {
               await storageService.subscribe(podcast);
+              existingFeedUrls.add(normalizedUrl);
               success++;
+            } else {
+              failed++;
             }
-          } catch (_) {}
+          } catch (_) {
+            failed++;
+          }
         }));
         processed += batch.length;
       }
@@ -310,7 +330,14 @@ class _FreshRssLoginScreenState extends ConsumerState<FreshRssLoginScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('导入完成: $success/${urls.length} 个订阅')));
+          SnackBar(
+            content: Text(
+              '导入完成: 成功 $success/${urls.length}'
+              '${skippedExisting > 0 ? '，已存在 $skippedExisting' : ''}'
+              '${failed > 0 ? '，失败 $failed' : ''}',
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

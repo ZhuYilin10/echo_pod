@@ -36,6 +36,7 @@ dependencies:
   # AI & Integration (Services)
   openai_dart: ^0.1.0-dev.14 # For AI summaries/chat
   share_plus: ^10.1.0 # For exporting files
+  receive_sharing_intent: ^1.8.1 # For receiving shared files
   rxdart: ^0.28.0
   screenshot: ^3.0.0
   flutter_inappwebview: ^6.1.5
