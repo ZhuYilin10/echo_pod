@@ -9,6 +9,7 @@ import '../platform/live_activity_service.dart';
 import '../storage/storage_service.dart';
 import '../web_podcast_service.dart'; // Import WebAudioController
 import '../freshrss_service.dart';
+import '../bilibili_parser_service.dart';
 
 class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   final _player = AudioPlayer();
@@ -33,6 +34,7 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   bool _isWebMode = false;
 
   double _currentSpeed = 1.0;
+  final BilibiliParserService _bilibiliParser = BilibiliParserService();
 
   EchoPodAudioHandler(this._liveActivityService, this._storageService) {
     _player.playbackEventStream.map(_transformEvent).listen((state) {
@@ -335,7 +337,12 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<AudioSource> _buildAudioSource(MediaItem item) async {
-    final audioUrl = item.extras?['audioUrl'] as String? ?? item.id;
+    final rawAudioUrl = item.extras?['audioUrl'] as String? ?? item.id;
+    final articleUrl = item.extras?['articleUrl'] as String?;
+    final audioUrl = await _resolvePlayableAudioUrl(
+      rawAudioUrl,
+      articleUrl: articleUrl,
+    );
     final directory = await getApplicationDocumentsDirectory();
     // Use hashcode to prevent filename collisions (e.g. index.m3u8)
     final extension = audioUrl.split('/').last.split('?').first.split('.').last;
@@ -345,14 +352,69 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
     if (localFile.existsSync()) {
       return AudioSource.file(localFile.path, tag: item);
     } else {
+      final headers = _buildAudioHeaders(audioUrl);
       // Use standard Uri source instead of LockCachingAudioSource to avoid potential
       // file system/encoding errors on iOS (err=-12864) which cause skipping.
-      return AudioSource.uri(Uri.parse(audioUrl), tag: item);
+      return AudioSource.uri(
+        Uri.parse(audioUrl),
+        tag: item,
+        headers: headers,
+      );
     }
+  }
+
+  Future<String> _resolvePlayableAudioUrl(
+    String audioUrl, {
+    String? articleUrl,
+  }) async {
+    final parseTarget = _looksLikeBilibiliWebUrl(articleUrl ?? '')
+        ? articleUrl!
+        : (_looksLikeBilibiliWebUrl(audioUrl) ? audioUrl : null);
+
+    if (parseTarget != null) {
+      try {
+        final info = await _bilibiliParser.parse(parseTarget);
+        if (info.videoUrl != null && info.videoUrl!.isNotEmpty) {
+          return info.videoUrl!;
+        }
+      } catch (e) {
+        print('AudioHandler: Failed to resolve bilibili web url: $e');
+      }
+    }
+    return audioUrl;
+  }
+
+  bool _looksLikeBilibiliWebUrl(String url) {
+    return url.contains('b23.tv') || url.contains('bilibili.com/video/');
+  }
+
+  Map<String, String>? _buildAudioHeaders(String audioUrl) {
+    final uri = Uri.tryParse(audioUrl);
+    if (uri == null) return null;
+    final host = uri.host.toLowerCase();
+    if (host.contains('bilivideo.com') || host.contains('bilibili.com')) {
+      return const {
+        'Referer': 'https://www.bilibili.com/',
+        'User-Agent':
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+      };
+    }
+    return null;
   }
 
   @override
   Future<void> play() async {
+    if (!_isWebMode &&
+        _currentEpisode != null &&
+        (_currentEpisode!.guid.startsWith('web_') ||
+            (_currentEpisode!.audioUrl?.contains('bilibili.com') ?? false) ||
+            (_currentEpisode!.audioUrl?.contains('b23.tv') ?? false) ||
+            (_currentEpisode!.audioUrl?.contains('youtube.com') ?? false))) {
+      // App restart resume path: metadata exists but web controller is not loaded yet.
+      await playEpisode(_currentEpisode!, autoPlay: true);
+      return;
+    }
+
     if (_isWebMode) {
       await _webController?.play();
     } else {

@@ -73,12 +73,16 @@ class VideoPodcastState {
 
 // --- Video Podcast Controller ---
 
-class VideoPodcastController extends StateNotifier<VideoPodcastState> {
-  VideoPodcastController() : super(VideoPodcastState());
+class VideoPodcastController extends StateNotifier<VideoPodcastState>
+    with WidgetsBindingObserver {
+  VideoPodcastController() : super(VideoPodcastState()) {
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   VideoPlayerController? _videoController;
   final BilibiliParserService _parser = BilibiliParserService();
   Timer? _positionTimer;
+  bool _shouldResumeAfterBackground = false;
 
   Future<void> loadUrl(String url) async {
     try {
@@ -103,10 +107,15 @@ class VideoPodcastController extends StateNotifier<VideoPodcastState> {
 
       // Ensure AudioSession is configured for background playback
       final session = await AudioSession.instance;
-      await session.configure(const AudioSessionConfiguration.speech());
+      await session.configure(const AudioSessionConfiguration.music());
+      await session.setActive(true);
 
       final controller = VideoPlayerController.networkUrl(
         Uri.parse(info.videoUrl!),
+        videoPlayerOptions: VideoPlayerOptions(
+          allowBackgroundPlayback: true,
+          mixWithOthers: false,
+        ),
         httpHeaders: {
           'Referer': 'https://www.bilibili.com/',
           'User-Agent':
@@ -147,6 +156,7 @@ class VideoPodcastController extends StateNotifier<VideoPodcastState> {
   }
 
   Future<void> pause() async {
+    _shouldResumeAfterBackground = false;
     await _videoController?.pause();
     state = state.copyWith(isPlaying: false);
   }
@@ -173,6 +183,7 @@ class VideoPodcastController extends StateNotifier<VideoPodcastState> {
     _positionTimer?.cancel();
     _videoController?.dispose();
     _videoController = null;
+    _shouldResumeAfterBackground = false;
   }
 
   void _startPositionTimer() {
@@ -197,8 +208,44 @@ class VideoPodcastController extends StateNotifier<VideoPodcastState> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _disposeController();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = _videoController;
+    if (controller == null) return;
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
+      if (controller.value.isPlaying) {
+        _shouldResumeAfterBackground = true;
+      }
+    }
+
+    if (state == AppLifecycleState.paused && _shouldResumeAfterBackground) {
+      _resumeAfterBackground();
+    }
+
+    if (state == AppLifecycleState.resumed && _shouldResumeAfterBackground) {
+      _resumeAfterBackground();
+    }
+  }
+
+  Future<void> _resumeAfterBackground() async {
+    final controller = _videoController;
+    if (controller == null) return;
+
+    try {
+      final session = await AudioSession.instance;
+      await session.setActive(true);
+      await controller.play();
+      state = state.copyWith(isPlaying: true);
+    } catch (_) {
+      // Keep silent; lock screen controls still provide a manual fallback.
+    }
   }
 }
 

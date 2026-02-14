@@ -1,6 +1,6 @@
 name: echo_pod
 description: A next-generation AI-powered podcast player.
-version: 0.0.1+83
+version: 0.0.1+87
 
 environment:
   sdk: '>=3.6.0 <4.0.0'

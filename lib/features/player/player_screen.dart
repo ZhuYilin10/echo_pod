@@ -82,6 +82,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }
 
   Episode _getEpisodeFromMediaItem(MediaItem mediaItem) {
+    if (mediaItem.extras != null) {
+      return Episode.fromJson(mediaItem.extras!);
+    }
+
     if (mediaItem.id.startsWith('web_')) {
       return Episode(
         guid: mediaItem.id,
@@ -92,16 +96,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         podcastFeedUrl: '',
       );
     }
-    return mediaItem.extras != null
-        ? Episode.fromJson(mediaItem.extras!)
-        : Episode(
-            guid: mediaItem.id,
-            title: mediaItem.title,
-            podcastTitle: mediaItem.album ?? '',
-            imageUrl: mediaItem.artUri?.toString(),
-            audioUrl: mediaItem.id,
-            podcastFeedUrl: '',
-          );
+    return Episode(
+      guid: mediaItem.id,
+      title: mediaItem.title,
+      podcastTitle: mediaItem.album ?? '',
+      imageUrl: mediaItem.artUri?.toString(),
+      audioUrl: mediaItem.id,
+      podcastFeedUrl: '',
+    );
   }
 
   Episode get _displayEpisode => _currentEpisode ?? widget.episode;
