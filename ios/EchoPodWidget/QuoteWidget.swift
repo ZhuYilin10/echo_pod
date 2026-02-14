@@ -7,7 +7,7 @@ struct Provider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
-        let defaults = UserDefaults(suiteName: "group.com.echopod.ai")
+        let defaults = UserDefaults(suiteName: "group.com.zhuyl.echoPod")
         let quote = defaults?.string(forKey: "widget_quote") ?? "听见好声音，发现新世界。"
         let author = defaults?.string(forKey: "widget_author") ?? "EchoPod"
         let imageUrl = defaults?.string(forKey: "widget_image") ?? ""
@@ -16,7 +16,7 @@ struct Provider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
-        let defaults = UserDefaults(suiteName: "group.com.echopod.ai")
+        let defaults = UserDefaults(suiteName: "group.com.zhuyl.echoPod")
         let quote = defaults?.string(forKey: "widget_quote") ?? "听见好声音，发现新世界。"
         let author = defaults?.string(forKey: "widget_author") ?? "EchoPod"
         let imageUrl = defaults?.string(forKey: "widget_image") ?? ""

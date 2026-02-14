@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
+
+import 'download_path_utils.dart';
 
 class DownloadService {
   final Dio _dio = Dio();
@@ -17,9 +18,7 @@ class DownloadService {
   }
 
   Future<String> _getLocalPath(String audioUrl) async {
-    final directory = await getApplicationDocumentsDirectory();
-    final fileName = audioUrl.split('/').last.split('?').first;
-    return '${directory.path}/downloads/$fileName';
+    return buildDownloadPathFromUrl(audioUrl);
   }
 
   Future<void> downloadEpisode(

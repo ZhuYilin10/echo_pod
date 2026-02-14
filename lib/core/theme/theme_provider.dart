@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../services/storage/storage_service.dart';
 import '../providers/providers.dart';
 import 'theme_config.dart';
@@ -45,28 +44,25 @@ final themeProvider = StateNotifierProvider<ThemeNotifier, AppThemeConfig>(
 /// 构建 M3 Expressive 混合字体
 TextTheme _buildExpressiveTextTheme(TextTheme? base) {
   final baseTheme = base ?? ThemeData.light().textTheme;
-  final outfit = GoogleFonts.outfitTextTheme(baseTheme);
-  final inter = GoogleFonts.interTextTheme(baseTheme);
-
-  return inter.copyWith(
-    displayLarge: outfit.displayLarge
+  return baseTheme.copyWith(
+    displayLarge: baseTheme.displayLarge
         ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -1.0),
-    displayMedium: outfit.displayMedium
+    displayMedium: baseTheme.displayMedium
         ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5),
-    displaySmall: outfit.displaySmall?.copyWith(fontWeight: FontWeight.w800),
-    headlineLarge: outfit.headlineLarge
+    displaySmall: baseTheme.displaySmall?.copyWith(fontWeight: FontWeight.w800),
+    headlineLarge: baseTheme.headlineLarge
         ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: -0.5),
     headlineMedium:
-        outfit.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
-    headlineSmall: outfit.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-    titleLarge: outfit.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-    titleMedium: outfit.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-    titleSmall: outfit.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-    // Keep Inter for Body/Label for readability
-    bodyLarge: inter.bodyLarge,
-    bodyMedium: inter.bodyMedium,
-    bodySmall: inter.bodySmall,
-    labelLarge: inter.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+        baseTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
+    headlineSmall:
+        baseTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+    titleLarge: baseTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+    titleMedium: baseTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+    titleSmall: baseTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+    bodyLarge: baseTheme.bodyLarge,
+    bodyMedium: baseTheme.bodyMedium,
+    bodySmall: baseTheme.bodySmall,
+    labelLarge: baseTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
   );
 }
 

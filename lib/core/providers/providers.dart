@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/podcast_service.dart';
 import '../../services/storage/storage_service.dart';
 import '../../services/audio/audio_handler.dart';
+import '../../services/db/database_service.dart';
 import '../models/podcast.dart';
 import '../models/episode.dart';
 
@@ -12,11 +13,17 @@ import '../../services/discovery_service.dart';
 import '../../services/platform/live_activity_service.dart';
 
 import '../../services/download/download_service.dart';
+import '../../services/repositories/download_repository.dart';
+import '../../services/repositories/library_repository.dart';
+import '../../services/repositories/playback_repository.dart';
+import '../../services/repositories/settings_repository.dart';
+import '../../services/repositories/sync_repository.dart';
 import '../../services/semantic_search_service.dart';
 import '../../services/xiaoyuzhou_parser_service.dart';
 import '../../services/freshrss_service.dart';
 import '../../services/platform/widget_service.dart';
 import '../../services/platform/widget_content_manager.dart';
+import '../../services/security/secure_credential_store.dart';
 
 final freshrssServiceProvider = Provider((ref) => FreshRssService());
 
@@ -42,12 +49,41 @@ final freshrssSubscriptionsProvider =
   return service.fetchSubscriptions();
 });
 
+final databaseServiceProvider = Provider((ref) => DatabaseService.instance);
+final secureCredentialStoreProvider =
+    Provider((ref) => SecureCredentialStore());
+final settingsRepositoryProvider = Provider((ref) => SettingsRepository(
+      dbService: ref.watch(databaseServiceProvider),
+    ));
+final libraryRepositoryProvider = Provider((ref) => LibraryRepository(
+      dbService: ref.watch(databaseServiceProvider),
+    ));
+final playbackRepositoryProvider = Provider((ref) => PlaybackRepository(
+      libraryRepository: ref.watch(libraryRepositoryProvider),
+      settingsRepository: ref.watch(settingsRepositoryProvider),
+      dbService: ref.watch(databaseServiceProvider),
+    ));
+final downloadRepositoryProvider = Provider((ref) => DownloadRepository(
+      libraryRepository: ref.watch(libraryRepositoryProvider),
+      dbService: ref.watch(databaseServiceProvider),
+    ));
+final syncRepositoryProvider = Provider((ref) => SyncRepository(
+      dbService: ref.watch(databaseServiceProvider),
+    ));
+
 final podcastServiceProvider = Provider((ref) => PodcastService(
       xiaoyuzhouParser: ref.watch(xiaoyuzhouParserServiceProvider),
       freshRssService: ref.watch(freshrssServiceProvider),
       storageService: ref.watch(storageServiceProvider),
     ));
-final storageServiceProvider = Provider((ref) => StorageService());
+final storageServiceProvider = Provider((ref) => StorageService(
+      libraryRepository: ref.watch(libraryRepositoryProvider),
+      playbackRepository: ref.watch(playbackRepositoryProvider),
+      downloadRepository: ref.watch(downloadRepositoryProvider),
+      settingsRepository: ref.watch(settingsRepositoryProvider),
+      syncRepository: ref.watch(syncRepositoryProvider),
+      credentialStore: ref.watch(secureCredentialStoreProvider),
+    ));
 final discoveryServiceProvider = Provider((ref) => DiscoveryService());
 final downloadServiceProvider = Provider((ref) => DownloadService());
 final activeDownloadsProvider = StreamProvider<Map<String, double>>((ref) {

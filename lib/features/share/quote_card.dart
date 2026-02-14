@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/models/episode.dart';
 
 class QuoteCard extends StatelessWidget {
@@ -63,7 +62,7 @@ class QuoteCard extends StatelessWidget {
                   children: [
                     Text(
                       episode.podcastTitle,
-                      style: GoogleFonts.notoSansSc(
+                      style: const TextStyle(
                         color: Colors.indigoAccent,
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
@@ -90,7 +89,7 @@ class QuoteCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             quote,
-            style: GoogleFonts.notoSerifSc(
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 22,
               height: 1.6,

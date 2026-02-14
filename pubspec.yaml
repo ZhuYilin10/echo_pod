@@ -31,6 +31,8 @@ dependencies:
   isar: ^3.1.0+1
   isar_flutter_libs: ^3.1.0+1
   shared_preferences: ^2.2.3
+  flutter_secure_storage: ^9.2.2
+  crypto: ^3.0.6
   diffutil_dart: ^3.0.0 # For list diffing
 
   # AI & Integration (Services)

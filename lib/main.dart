@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:audio_service/audio_service.dart';
 import 'services/storage/storage_service.dart';
 import 'services/audio/audio_handler.dart';
+import 'services/db/database_service.dart';
 import 'services/platform/live_activity_service.dart';
 import 'core/providers/providers.dart';
 import 'core/theme/theme_provider.dart';
@@ -14,6 +15,7 @@ late EchoPodAudioHandler _audioHandler;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await DatabaseService.instance.initialize();
 
   final liveActivityService = LiveActivityService();
   final storageService = StorageService();

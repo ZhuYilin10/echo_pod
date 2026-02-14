@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:audio_service/audio_service.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 import '../../core/models/episode.dart';
@@ -10,6 +9,7 @@ import '../storage/storage_service.dart';
 import '../web_podcast_service.dart'; // Import WebAudioController
 import '../freshrss_service.dart';
 import '../bilibili_parser_service.dart';
+import '../download/download_path_utils.dart';
 
 class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
   final _player = AudioPlayer();
@@ -343,11 +343,8 @@ class EchoPodAudioHandler extends BaseAudioHandler with SeekHandler {
       rawAudioUrl,
       articleUrl: articleUrl,
     );
-    final directory = await getApplicationDocumentsDirectory();
-    // Use hashcode to prevent filename collisions (e.g. index.m3u8)
-    final extension = audioUrl.split('/').last.split('?').first.split('.').last;
-    final fileName = '${audioUrl.hashCode}.$extension';
-    final localFile = File('${directory.path}/downloads/$fileName');
+    final localPath = await buildDownloadPathFromUrl(audioUrl);
+    final localFile = File(localPath);
 
     if (localFile.existsSync()) {
       return AudioSource.file(localFile.path, tag: item);

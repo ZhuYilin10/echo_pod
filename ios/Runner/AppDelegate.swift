@@ -98,7 +98,7 @@ import UIKit
           return
         }
 
-        let defaults = UserDefaults(suiteName: "group.com.echopod.ai")
+        let defaults = UserDefaults(suiteName: "group.com.zhuyl.echoPod")
         defaults?.set(quote, forKey: "widget_quote")
         defaults?.set(author, forKey: "widget_author")
         defaults?.set(imageUrl, forKey: "widget_image")
