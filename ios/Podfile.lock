@@ -7,6 +7,8 @@ PODS:
   - CocoaLumberjack (3.9.0):
     - CocoaLumberjack/Core (= 3.9.0)
   - CocoaLumberjack/Core (3.9.0)
+  - connectivity_plus (0.0.1):
+    - Flutter
   - cupertino_native_better (0.0.1):
     - Flutter
     - SVGKit (~> 3.0)
@@ -53,6 +55,7 @@ PODS:
 DEPENDENCIES:
   - audio_service (from `.symlinks/plugins/audio_service/darwin`)
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
+  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - cupertino_native_better (from `.symlinks/plugins/cupertino_native_better/ios`)
   - Flutter (from `Flutter`)
   - flutter_inappwebview_ios (from `.symlinks/plugins/flutter_inappwebview_ios/ios`)
@@ -79,6 +82,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/audio_service/darwin"
   audio_session:
     :path: ".symlinks/plugins/audio_session/ios"
+  connectivity_plus:
+    :path: ".symlinks/plugins/connectivity_plus/ios"
   cupertino_native_better:
     :path: ".symlinks/plugins/cupertino_native_better/ios"
   Flutter:
@@ -112,6 +117,7 @@ SPEC CHECKSUMS:
   audio_service: cab6c1a0eaf01b5a35b567e11fa67d3cc1956910
   audio_session: 19e9480dbdd4e5f6c4543826b2e8b0e4ab6145fe
   CocoaLumberjack: 5644158777912b7de7469fa881f8a3f259c2512a
+  connectivity_plus: 2a701ffec2c0ae28a48cf7540e279787e77c447d
   cupertino_native_better: 56964e07f30aa564188d4e3e2171ccb1c75f7a98
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_inappwebview_ios: 6f63631e2c62a7c350263b13fa5427aedefe81d4
@@ -129,6 +135,6 @@ SPEC CHECKSUMS:
   wakelock_plus: 373cfe59b235a6dd5837d0fb88791d2f13a90d56
   webview_flutter_wkwebview: a4af96a051138e28e29f60101d094683b9f82188
 
-PODFILE CHECKSUM: 976ce2e6b9868bd0860275e94130cd99a4d7f9cd
+PODFILE CHECKSUM: c4234abeb4d27e00e962b052cbff9eefa6902af9
 
 COCOAPODS: 1.16.2
